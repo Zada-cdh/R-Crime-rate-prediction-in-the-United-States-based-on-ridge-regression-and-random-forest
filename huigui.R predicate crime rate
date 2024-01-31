@@ -17,23 +17,23 @@ summary(mydata)
 #train_data<-scale(train_data,center=T,scale=T)
 #test_data<-scale(test_data,center=T,scale=T)
 #cor(train_data)
-#ÆÕÍ¨»Ø¹é
+#æ™®é€šå›å½’
 mydata<-scale(mydata,center=T,scale=T)
 mydata<-as.data.frame(mydata)
 fit2<-lm(y~V13+V15+V16,data=mydata)
 
 #fit2<-lm(y~V4+V6+V7+V11+V12+V13+V14+V15+V16,data=mydata)
 summary(fit2)
-#Öğ²½»Ø¹é
+#é€æ­¥å›å½’
 tstep<-step(fit2)
 summary(tstep)
 fit2.Y<-predict(fit2,test_data)
 plot(fit2.Y,testnY,xlab="predicted",ylab="actual",main="ols regression")
 sst <- sum((testnY- mean(testnY))^2)
-sse <- sum((fit2.Y- testnY)^2)# R·½
+sse <- sum((fit2.Y- testnY)^2)# Ræ–¹
 rsq <-1- sse / sst
 rsq 
-#¼ì²é¶àÖØ¹²ÏßĞÔ
+#æ£€æŸ¥å¤šé‡å…±çº¿æ€§
 train_data<-as.data.frame(train_data[,c(14,2,5,6,12)])
 test_data<-as.data.frame(test_data[,c(14,2,5,6,12)])
 fit<-lm(y~V5+V8+V9+V16,data=train_data)
@@ -41,7 +41,7 @@ summary(fit)
 vif(fit)
 mdata<-as.data.frame(train_data[,c(2,5,6,12)])
 pairs(mydata)
-#Áë»Ø¹é
+#å²­å›å½’
 library(tidyverse) 
 library(broom) 
 library(glmnet) 
@@ -52,31 +52,31 @@ X<-mydata[,-14]
 X<-mydata[,c(1,3,4,7,8,9,10,11,12)]
 nY<-test_data[,1]
 nX<-test_data[,-1]
-#½»²æÑéÖ¤·¨È·¶¨s
+#äº¤å‰éªŒè¯æ³•ç¡®å®šs
 cvfit<-cv.glmnet(X,Y,type.measure = "mse",nfolds = 5,alpha=0)
 plot(cvfit)
-#È¡lambda.minÊ±¾ù·½Îó²î×îĞ¡
+#å–lambda.minæ—¶å‡æ–¹è¯¯å·®æœ€å°
 cvfit$lambda.min
-#ÁíÒ»ÖÖ·½·¨È·¶¨s
+#å¦ä¸€ç§æ–¹æ³•ç¡®å®šs
 ridge<-glmnet(X,Y,family = "gaussian",alpha=0)
 ridge
 plot(ridge,label = TRUE)
-#Áë¼£Í¼
+#å²­è¿¹å›¾
 plot(ridge,xvar="lambda",label = TRUE)
 #
 library(MASS)
 lm.ridge(Y~V4+V13+V15+V16,mydata,lambda=seq(0,0.1,0.001))
 plot(lm.ridge(Y~V13+V15+V16,mydata,lambda=seq(0,0.1,0.001))) 
-#ÎªÁË±ÜÃâ¹ıÄâºÏ£¬ËùÒÔs²»Ñ¡ÓÃ0.08£¬¶øÊÇ´óÖÂµÄÇÒ³£ÓÃµÄ0.1
+#ä¸ºäº†é¿å…è¿‡æ‹Ÿåˆï¼Œæ‰€ä»¥sä¸é€‰ç”¨0.08ï¼Œè€Œæ˜¯å¤§è‡´çš„ä¸”å¸¸ç”¨çš„0.1
 ridge.coef<-predict(ridge,s=0.1,type="coefficients")
 ridge.coef
 ridge.Y<-predict(ridge,newx=nX,type = "response",s=0.1)
 plot(ridge.Y,nY,xlab="predicted",ylab="actual",main="ridge regression")
 sst <- sum((nY- mean(nY))^2)
-sse <- sum((ridge.Y- nY)^2)# R·½
+sse <- sum((ridge.Y- nY)^2)# Ræ–¹
 rsq <-1- sse / sst
 rsq 
-#Ëæ»úÉ­ÁÖ
+#éšæœºæ£®æ—
 set.seed(1234)
 # 396 samples were taken(sampling without replacement)
 mata<-sample(nrow(mydata), 396, replace = FALSE, prob = NULL)
@@ -91,10 +91,10 @@ varImpPlot(rf)
 pre_data <- predict(rf,newdata=test_data)
 test_data<-data.frame(test_data)
 obs_p_data = data.frame(prob=pre_data,obs=test_data$y)
-library(ggplot2)  ### µ¼Èëggplot2°ü
-plot1 <- ggplot(data = test_data, aes(x = c(1:44))) + geom_line(aes(y = y, linetype = "Êµ¼ÊÖµ", colour = "Êµ¼ÊÖµ"), size = 0.8) ### »­Êµ¼ÊÖµµÃÇúÏß
-plot2 <- plot1 + geom_line(aes(y = pre_data, linetype = "Ô¤²âÖµ", colour = "Ô¤²âÖµ"), size = 0.8) ### »­Ô¤²âÖµÇúÏß
-plot2 + scale_linetype_manual(name = "", values = c("Êµ¼ÊÖµ" = "solid", "Ô¤²âÖµ" = "twodash")) +
-  scale_colour_manual(name = "", values = c("Êµ¼ÊÖµ" = "red", "Ô¤²âÖµ" = "blue"))  ### ÉèÖÃÍ¼Àı
+library(ggplot2)  ### å¯¼å…¥ggplot2åŒ…
+plot1 <- ggplot(data = test_data, aes(x = c(1:44))) + geom_line(aes(y = y, linetype = "å®é™…å€¼", colour = "å®é™…å€¼"), size = 0.8) ### ç”»å®é™…å€¼å¾—æ›²çº¿
+plot2 <- plot1 + geom_line(aes(y = pre_data, linetype = "é¢„æµ‹å€¼", colour = "é¢„æµ‹å€¼"), size = 0.8) ### ç”»é¢„æµ‹å€¼æ›²çº¿
+plot2 + scale_linetype_manual(name = "", values = c("å®é™…å€¼" = "solid", "é¢„æµ‹å€¼" = "twodash")) +
+  scale_colour_manual(name = "", values = c("å®é™…å€¼" = "red", "é¢„æµ‹å€¼" = "blue"))  ### è®¾ç½®å›¾ä¾‹
 ran_roc <- roc(test_data$y,as.numeric(pre_data))
-plot(ran_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='Ëæ»úÉ­ÁÖÄ£ĞÍROCÇúÏß,mtry=3,ntree=500')
+plot(ran_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='éšæœºæ£®æ—æ¨¡å‹ROCæ›²çº¿,mtry=3,ntree=500')
