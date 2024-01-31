@@ -1,0 +1,424 @@
+---
+title: "quiz 4"
+author: "Daihuan Cai"
+date: "2020/7/23"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+# Load Libraries
+library(rmarkdown)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(ggbeeswarm)
+library(survey)
+```
+## Q1
+
+**1.	For each of the following situations, indicate how you might use ratio or regression estimation.**
+
+**a.	Estimate the proportion of time in television news broadcasts in your city that is devoted to sports. **
+
+I think we can use the time of the whole news as the auxiliary variable. We can see that the time of sports news may be 0, so the scatter diagram can go through the origin, so I choose the ratio estimation.
+
+**b.	Estimate the average number of fish caught per hour for anglers visiting a lake in August. **
+
+Maybe we can assume that a fisherman went fishing in the lake last year and caught fish. If that's the case, we can use the average number of fish fishers caught every day last year as the auxiliary variable. In this way, the time range of the auxiliary variable is widened, and the auxiliary variable is more unlikely to be 0. Therefore, I think that if we choose the number of fish caught per day by fishermen who came to the lake last year as the auxiliary variable, we can use ratio estimation.
+
+**c.	Estimate the average amount that graduate students at your university spent on textbook in Spring semester. **
+
+It is generally believed that the average cost of teaching materials for graduate students in spring is closely related to that of last spring semester. Maybe the book cost is the same every year. So I chose ratio estimation.
+
+**d.	Estimate the total weight of usable meat (discarding bones, fat, and skin) in a shipment of chickens. **
+
+I think the weight of the whole chicken can be used as a secondary variable, and obviously, the proportion of meat can't be zero. So this plot can't go through the origin. So I choose regression estimation.
+
+## Q2
+
+**2.	Poststratify the sample in data file agstrat.csv into four census region (Northeast, North Central, South, and West), just like in the lecture note. Note:  the population data file agpop.csv is also provided so you could get population information. **
+
+**a.	Estimate the population mean using poststratification approach. Approximate the variance of the estimated population mean.  Obtain 95% CI for the mean.  Interpret the results. **
+
+```{r cars}
+# Load Data
+agpop<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day4/agpop.csv")
+agstrat<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day4/agstrat.csv")%>%
+mutate(COUNTY=as.character(COUNTY)) %>%
+mutate(REGION = factor(REGION, levels=c("NC", "NE","S","W")))
+# Examine Data
+summary(agstrat$ACRES92)
+hist(agstrat$ACRES92, breaks=50)
+hist(agstrat$ACRES87, breaks=50)
+hist(agstrat$ACRES82, breaks=50)
+hist(agstrat$FARMS92, breaks=50)
+hist(agstrat$FARMS87, breaks=50)
+hist(agstrat$FARMS82, breaks=50)
+hist(agstrat$LARGEF92, breaks=50)
+hist(agstrat$LARGEF87, breaks=50)
+hist(agstrat$LARGEF82, breaks=50)
+hist(agstrat$SMALLF92, breaks=50)
+hist(agstrat$SMALLF87, breaks=50)
+hist(agstrat$SMALLF82, breaks=50)
+# Get freq
+NC<-nrow(agpop[which(agpop$REGION=="NC"),])
+NE<-nrow(agpop[which(agpop$REGION=="NE"),])
+S<-nrow(agpop[which(agpop$REGION=="S"),])
+W<-nrow(agpop[which(agpop$REGION=="W"),])
+nc<-nrow(agstrat[which(agstrat$REGION=="NC"),])
+ne<-nrow(agstrat[which(agstrat$REGION=="NE"),])
+s<-nrow(agstrat[which(agstrat$REGION=="S"),])
+w<-nrow(agstrat[which(agstrat$REGION=="W"),])
+# Calculate fpc
+agstrat$fpc[(agstrat$REGION=="NC")] <- nc/NC
+agstrat$fpc[(agstrat$REGION=="NE")] <- ne/NE
+agstrat$fpc[(agstrat$REGION=="S")] <- s/S
+agstrat$fpc[(agstrat$REGION=="W")] <- w/W
+# Calculate weight
+agstrat$weight[(agstrat$REGION=="NC")] <- NC/nc
+agstrat$weight[(agstrat$REGION=="NE")] <- NE/ne
+agstrat$weight[(agstrat$REGION=="S")] <- S/s
+agstrat$weight[(agstrat$REGION=="W")] <- W/w
+# First, we create the survey design-a SRS
+agstrat_survey_design = svydesign(ids=~1, fpc = ~fpc, weight = ~weight, data = agstrat)
+# post-stratify by REGION.
+agstrat_REGION_counts <- data.frame(REGION=c("NC", "NE","S","W"), Freq=c(NC,NE,S,W))
+# Estimate the population mean using poststratification approach
+post_stra<-postStratify(agstrat_survey_design, ~REGION, agstrat_REGION_counts)
+# Estimate the population mean
+svymean(~ACRES92, post_stra)
+# Estimated confidence interval
+confint(svymean(~ACRES92, post_stra))
+```
+
+analysis: According to the meaning of the topic, the topic requires to find the estimated value of the mean value of the population. However, since the total of which variable is not given, I draw the histogram of all the variables, and We found that all the histograms are similar.  Finally, I chose the acres92 variable, because it has the largest sample size and for large sample, the sampling distributions of both y_bar and u_y.r_hat will be approximately normal. When using poststratification approach, we can see that the estimated mean of acres92 is 295561, and the estimated confidence interval is (263698.8,327422.8), and the variance of the estimated population mean is about SE_hat^2=16256^2=264,257,536. 
+
+**b.	How is the approximate 95% CI using poststratification compared with those obtained using SRS? **
+
+Run a. before running b.
+
+```{r}
+# Load Data
+agpop<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day4/agpop.csv")
+agstrat<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day4/agstrat.csv")%>%
+mutate(COUNTY=as.character(COUNTY)) %>%
+mutate(REGION = factor(REGION, levels=c("NC", "NE","S","W")))
+# Examine Data
+summary(agstrat$ACRES92)
+hist(agstrat$ACRES92, breaks=50)
+# Calculate fpc
+agstrat$fpc[(agstrat$REGION=="NC")] <- nc/NC
+agstrat$fpc[(agstrat$REGION=="NE")] <- ne/NE
+agstrat$fpc[(agstrat$REGION=="S")] <- s/S
+agstrat$fpc[(agstrat$REGION=="W")] <- w/W
+# Calculate weight
+agstrat$weight[(agstrat$REGION=="NC")] <- NC/nc
+agstrat$weight[(agstrat$REGION=="NE")] <- NE/ne
+agstrat$weight[(agstrat$REGION=="S")] <- S/s
+agstrat$weight[(agstrat$REGION=="W")] <- W/w
+# we create the survey design-a SRS
+agstrat_survey_design = svydesign(ids=~1, fpc = ~fpc, weight = ~weight, data = agstrat)
+# Estimate the population mean
+svymean(~ACRES92, agstrat_survey_design)
+# Estimated confidence interval
+confint(svymean(~ACRES92, agstrat_survey_design))
+```
+
+analysis: When using SRS approach, we can see that the estimated mean of acres92 is 295561, and the estimated confidence interval is (259506.1,331615.4), and the variance of the estimated population mean is about SE_hat^2=18396^2=338,412,816.
+Comparison: Intuitively visible,(259506.1,331615.4) is a little wider than (263698.8,327422.8). Therefore, the confidence interval obtained by SRS is a little wider than that by poststratification approach. We can see there is a small difference between the two confidence intervals, it shows that for large samples, the sampling distributions of both y_bar and u_y.r_hat will really be approximately normal.
+
+## Q3
+
+**3.	The Integrated Public Use Microdata Series (IPUMS) is available online at https://usa.ipums.org/usa/ (Ruggles et al., 2004).   Again use the 1980 Decennial Census sample as our population data (same as the previous quiz).  However, in this problem, along with the extraction of total income data (inctot), you also need to extract data of the following variables: age, sex.**
+
+**a.	Use combined levels between age group (<35; 35-59; 60+), and sex (male, female) to divide the population into strata. Draw a stratified random sample n= 718 using proportional allocation.  Hint: You need to calculate the proportion of the population sampled (e.g., n/N).  Then use this proportion to draw a stratified sample. **
+
+```{r}
+mydata<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day2/mydata.csv")
+# Delete rows with 9999999
+mydata<- subset(mydata,mydata$INCTOT!="9999999")
+# Create Strata
+mydata =
+mydata %>%
+mutate(
+### Separate strata
+mydata_strata = case_when(
+(mydata$SEX == 1 & mydata$AGE<35) ~ "strata1",
+(mydata$SEX == 2 & mydata$AGE<35) ~ "strata2",
+(mydata$SEX == 1 & mydata$AGE>=35 & mydata$AGE<=59) ~ "strata3",
+(mydata$SEX == 2 & mydata$AGE>=35 & mydata$AGE<=59) ~ "strata4",
+(mydata$SEX == 1 & mydata$AGE>=60) ~ "strata5",
+(mydata$SEX == 2 & mydata$AGE>=60) ~ "strata6"
+) %>%
+  ### Specify factor levels
+factor(levels=c("strata1", "strata2","strata3","strata4","strata5","strata6"))
+)
+mydata %>% select(mydata_strata) %>% table()
+# Calculate the total quantity
+N<-nrow(mydata)
+# Extract specific lines
+data1<-mydata[which(mydata$mydata_strata=="strata1"),]
+data2<-mydata[which(mydata$mydata_strata=="strata2"),]
+data3<-mydata[which(mydata$mydata_strata=="strata3"),]
+data4<-mydata[which(mydata$mydata_strata=="strata4"),]
+data5<-mydata[which(mydata$mydata_strata=="strata5"),]
+data6<-mydata[which(mydata$mydata_strata=="strata6"),]
+# Calculate the number of people in each layer
+n1<-nrow(mydata[which(mydata$mydata_strata=="strata1"),])
+n2<-nrow(mydata[which(mydata$mydata_strata=="strata2"),])
+n3<-nrow(mydata[which(mydata$mydata_strata=="strata3"),])
+n4<-nrow(mydata[which(mydata$mydata_strata=="strata4"),])
+n5<-nrow(mydata[which(mydata$mydata_strata=="strata5"),])
+n6<-nrow(mydata[which(mydata$mydata_strata=="strata6"),])
+# Integrate the number of people at all levels
+nh<-c(n1,n2,n3,n4,n5,n6)
+# Calculate the number of people in each layer in the sample
+Nh<-718*nh/N
+Nh
+# Round off the number of people on each layer
+Nh_round<-round(Nh)
+Nh_round
+# Sampling of each layer
+set.seed(1)
+sub1<-sample(nrow(data1),Nh_round[1], replace = FALSE, prob = NULL)
+sample1<-data1[sub1,]
+sub2<-sample(nrow(data2),Nh_round[2], replace = FALSE, prob = NULL)
+sample2<-data2[sub2,]
+sub3<-sample(nrow(data3),Nh_round[3], replace = FALSE, prob = NULL)
+sample3<-data3[sub3,]
+sub4<-sample(nrow(data4),Nh_round[4], replace = FALSE, prob = NULL)
+sample4<-data4[sub4,]
+sub5<-sample(nrow(data5),Nh_round[5], replace = FALSE, prob = NULL)
+sample5<-data5[sub5,]
+sub6<-sample(nrow(data6),Nh_round[6], replace = FALSE, prob = NULL)
+sample6<-data6[sub6,]
+ndata<-merge(sample1,sample2,all = TRUE)
+edata<-merge(sample3,sample4,all = TRUE)
+wdata<-merge(sample5,sample6,all = TRUE)
+sampledata<-merge(ndata,edata,all = TRUE)
+sampledata<-merge(sampledata,wdata,all = TRUE)
+```
+
+analysis:I don't think it is necessary to remove the sample with inctot = 0, because there will be a break even situation, so the following results are obtained after only removing 999999. In addition, the number of people must be an integer, I choose the method of rounding. We can see that the sample size of each layer is rounded down to(166 165 119 126  61  81);The sample data set is sampledata.
+
+**b.	With the stratified sample you selected with proportional allocation, estimate the total income for the population, along with a 95% CI.  Interpret the results. Hint:  You need to obtain N_h for each stratum.  Then compute the weight for each stratum. **
+
+Run a. before running b.
+
+```{r}
+# Calculate weight
+wh<-nh/Nh_round
+sampledata$wh[(sampledata$mydata_strata=="strata1")] <- wh[1]
+sampledata$wh[(sampledata$mydata_strata=="strata2")] <- wh[2]
+sampledata$wh[(sampledata$mydata_strata=="strata3")] <- wh[3]
+sampledata$wh[(sampledata$mydata_strata=="strata4")] <- wh[4]
+sampledata$wh[(sampledata$mydata_strata=="strata5")] <- wh[5]
+sampledata$wh[(sampledata$mydata_strata=="strata6")] <- wh[6]
+# Calculate fpc
+sampledata$population[(sampledata$mydata_strata=="strata1")] <- n1
+sampledata$population[(sampledata$mydata_strata=="strata2")] <- n2
+sampledata$population[(sampledata$mydata_strata=="strata3")] <- n3
+sampledata$population[(sampledata$mydata_strata=="strata4")] <- n4
+sampledata$population[(sampledata$mydata_strata=="strata5")] <- n5
+sampledata$population[(sampledata$mydata_strata=="strata6")] <- n6
+# Layered design
+samp_des <- svydesign(ids=~1, strata=~mydata_strata, 
+                      weights=~wh, 
+                      fpc =~population, 
+                      data = sampledata)
+# Estimated total
+svytot.est <- svytotal(~INCTOT, samp_des, data=~sampledata)
+svytot.est
+# Calculate the confidence interval
+confint(svytot.est)
+```
+
+Explanation: we can see that the estimated value of the total income of the population is 7785712746, SE is 3.15*10^08; and The 95% confidence interval is(7168323998,8403101493).
+
+**c.	Since we have “population data”, use these data to estimate the within-stratum variances.  Draw a stratified random sample n=718 using optimal allocation.  Under what conditions can optimal allocation be expected to perform much better than proportional allocation? Do these conditions exist for this population? Comment on the relative performance that you observed between these two types of allocation— proportional allocation vs. optimal allocation. **
+
+Run a. before running c.
+
+First, we calculate the within-stratum variances under proportional distribution.
+
+```{r}
+# calculate the within-stratum variances under proportional distribution.
+# Calculate the within-stratum variances of each layer
+s21=var(sample1$INCTOT)
+s22=var(sample2$INCTOT)
+s23=var(sample3$INCTOT)
+s24=var(sample4$INCTOT)
+s25=var(sample5$INCTOT)
+s26=var(sample6$INCTOT)
+# calculate the within-stratun variance
+s2_wy<-(1/N)*(n1*s21+n2*s22+n3*s23+n4*s24+n5*s25+n6*s26)
+s2_wy
+```
+
+Second, we use the optimal allocation method to sample.
+
+```{r}
+# Calculate the Calculate the within-stratum variances of each layer
+v21<-var(data1$INCTOT)
+v22<-var(data2$INCTOT)
+v23<-var(data3$INCTOT)
+v24<-var(data4$INCTOT)
+v25<-var(data5$INCTOT)
+v26<-var(data6$INCTOT)
+v2<-c(v21,v22,v23,v24,v25,v26)
+v2
+# Calculate the standard deviation within the layer
+v1<-sqrt(v21)
+v2<-sqrt(v22)
+v3<-sqrt(v23)
+v4<-sqrt(v24)
+v5<-sqrt(v25)
+v6<-sqrt(v26)
+# calculate the adjusted sample size of each stratum by using the equation
+N1=round(718*(n1*v1)/(n1*v1+n2*v2+n3*v3+n4*v4+n5*v5+n6*v6))
+N2=round(718*(n2*v2)/(n1*v1+n2*v2+n3*v3+n4*v4+n5*v5+n6*v6))
+N3=round(718*(n3*v3)/(n1*v1+n2*v2+n3*v3+n4*v4+n5*v5+n6*v6))
+N4=round(718*(n4*v4)/(n1*v1+n2*v2+n3*v3+n4*v4+n5*v5+n6*v6))
+N5=round(718*(n5*v5)/(n1*v1+n2*v2+n3*v3+n4*v4+n5*v5+n6*v6))
+N6=round(718*(n6*v6)/(n1*v1+n2*v2+n3*v3+n4*v4+n5*v5+n6*v6))
+Nh_round<-c(N1,N2,N3,N4,N5,N6)
+# Seed setting, random sampling
+set.seed(2)
+sub1<-sample(nrow(data1),N1, replace = FALSE, prob = NULL)
+ample1<-data1[sub1,]
+sub2<-sample(nrow(data2),N2, replace = FALSE, prob = NULL)
+ample2<-data2[sub2,]
+sub3<-sample(nrow(data3),N3, replace = FALSE, prob = NULL)
+ample3<-data3[sub3,]
+sub4<-sample(nrow(data4),N4, replace = FALSE, prob = NULL)
+ample4<-data4[sub4,]
+sub5<-sample(nrow(data5),N5, replace = FALSE, prob = NULL)
+ample5<-data5[sub5,]
+sub6<-sample(nrow(data6),N6, replace = FALSE, prob = NULL)
+ample6<-data6[sub6,]
+# Merging datasets
+ndata<-merge(ample1,ample2,all = TRUE)
+edata<-merge(ample3,ample4,all = TRUE)
+wdata<-merge(ample5,ample6,all = TRUE)
+ampledata<-merge(ndata,edata,all = TRUE)
+ampledata<-merge(ampledata,wdata,all = TRUE)
+# calculate the within-stratum variances under Optimal allocation.
+# Calculate the within-stratum variances of each layer
+s21=var(ample1$INCTOT)
+s22=var(ample2$INCTOT)
+s23=var(ample3$INCTOT)
+s24=var(ample4$INCTOT)
+s25=var(ample5$INCTOT)
+s26=var(ample6$INCTOT)
+# calculate the within-stratun variance
+s2_wy<-(1/N)*(n1*s21+n2*s22+n3*s23+n4*s24+n5*s25+n6*s26)
+s2_wy
+# Calculate weight
+wh<-nh/Nh_round
+ampledata$wh[(ampledata$mydata_strata=="strata1")] <- wh[1]
+ampledata$wh[(ampledata$mydata_strata=="strata2")] <- wh[2]
+ampledata$wh[(ampledata$mydata_strata=="strata3")] <- wh[3]
+ampledata$wh[(ampledata$mydata_strata=="strata4")] <- wh[4]
+ampledata$wh[(ampledata$mydata_strata=="strata5")] <- wh[5]
+ampledata$wh[(ampledata$mydata_strata=="strata6")] <- wh[6]
+# Calculate fpc
+ampledata$population[(ampledata$mydata_strata=="strata1")] <- n1
+ampledata$population[(ampledata$mydata_strata=="strata2")] <- n2
+ampledata$population[(ampledata$mydata_strata=="strata3")] <- n3
+ampledata$population[(ampledata$mydata_strata=="strata4")] <- n4
+ampledata$population[(ampledata$mydata_strata=="strata5")] <- n5
+ampledata$population[(ampledata$mydata_strata=="strata6")] <- n6
+# Layered design
+samp_des <- svydesign(ids=~1, strata=~mydata_strata, 
+                      weights=~wh, 
+                      fpc =~population, 
+                      data = ampledata)
+# Estimated total
+svytot.est <- svytotal(~INCTOT, samp_des, data=~ampledata)
+svytot.est
+# Calculate the confidence interval
+confint(svytot.est)
+```
+
+We can see that under the condition of proportional distribution, the estimated within-stratum variances is 108851153; under the condition of Optimal allocation, the estimated within-stratum variances is 116287092.
+
+**Under what conditions can optimal allocation be expected to perform much better than proportional allocation?**
+
+If the variance of each class is very different, the optimal allocation is better than the proportional allocation.
+
+**Do these conditions exist for this population?**
+
+Yes. From the calculation of intralayer variance, we can see the variance is(93770440,34194051,226766706,64079549,158959616,45325094), the variance of each strata is so different and I suppose that we should use optimal allocation.
+
+**Comment on the relative performance that you observed between these two types of allocation— proportional allocation vs. optimal allocation. **
+ 
+We can see that under the optimal allocation, the estimated total inctot is 7763661982 and the standatd error of estimated total inctot is 298723099, the estimated confidence interval is (7178175467,8349148497).
+
+Then we compare the result using optimal allocation with result using proportional allocation, we can see that:
+the estimated total inctot under the optimal allocation is 7763661982, and the estimated total inctot under proportional allocation is 7785712746, the estimated total inctot under the optimal allocation is less than the estimated total inctot under proportional allocation. And the standatd error of estimated total
+inctot under the optimal allocation is less than the standatd error of estimated total inctot under proportional allocation. So we can see that in this population using optimal allocation is better.
+
+**d.	Overall, do you think your stratification was worthwhile for sampling from this population?  How did your stratified estimates compare with the estimate from SRS (from the previous quiz)?  If you were to start over on the stratification, what would you do differently? **
+
+**Overall, do you think your stratification was worthwhile for sampling from this population?  How did your stratified estimates compare with the estimate from SRS (from the previous quiz)? **
+
+```{r}
+# SRS
+# specify dir path where data file is saved
+mydata<- read.csv("C:/Users/Zada/Desktop/Sampling technique/day2/mydata.csv") 
+# Withdrawal of total personal income
+mdata<-mydata$INCTOT
+# Import data into a data frame to form a list
+mdata<-data.frame(mdata)
+# Replace 999999 with NA
+mdata[mdata=="9999999"] <-NA
+# Delete rows with NA
+mdata<- subset(mdata,mdata!="NA")
+# Delete rows with 0000000
+mdata<- subset(mdata,mdata!="0000000")
+# see the data, first 6 records shown by default
+head(mdata) 
+# install this package
+library(survey) 
+# install this package
+library(sampling) 
+# a seed number for reproducibility purposes
+set.seed(1234)
+# 718 samples were taken(sampling with replacement)
+mata<-sample(nrow(mdata), 718, replace = TRUE, prob = NULL)
+# Total population size
+N = nrow(mdata) 
+# Import data into a data frame to form a list
+mata<-data.frame(mata)
+# Sample size
+n = nrow(mata) 
+# Import data into a data frame to form a list
+mata<-data.frame(mata)
+# SRS Design
+des = svydesign(ids = ~1, fpc = rep(N, n), data = mata) 
+# 
+svytot.est <- svytotal(~mata,des, data=~mata)
+svytot.est
+# CI for total mdata
+confint(svytotal(~mata, des))
+# sampling weight
+# Sample proportion, same for all obs with SRS
+p.i = n/N 
+# sampling weight (self-weight)
+w.i = 1/p.i
+# Calculate estimates of the total income of the population
+# sum(w.i*x.i) = N*mean(mdata$mdata) 
+t.hat = sum(w.i*mata$mata)
+t.hat
+```
+
+Yes. it's worth. From SRS, The estimated value of INCOT is 3242.8 million, which is larger than that of proportional allocation and optimal allocation. We can see that the estimated standard error of INCOT is 6886871714, which is much larger than that of proportional allocation 3150 million and optimal allocation 298723099.
+
+Maybe I will use optimal allocation, because the standard error of optimal allocation is higher than that of proportional allocation, the overall estimation value is more accurate, and the confidence interval is wider than that of proportional allocation, so I will choose optimal allocation.
+
+If I start stratification again, I will not stratified by age. I will consider stratification by income level, which can reduce the variance between each layer and increase the variance between layers, so as to reduce the sampling variance.

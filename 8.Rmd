@@ -1,0 +1,412 @@
+---
+title: "JUFE summer 2020 - midterm"
+author: "Daihuan Cai"
+date: "2020/7/24"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(rmarkdown) 
+library(tidyverse)
+library(magrittr)
+library(ggplot2) 
+library(ggbeeswarm) 
+library(survey)
+```
+
+## PART I
+
+**1.	Fark and Johnson (1997) reported a survey of professors of education taken in summer of 1997 and concluded that there was a large disparity between the views of education professors and those of the general public. A sample of 5324 education professors was drawn from a population of about 34,000 education professors in colleges and universities across the country. A letter was mailed to each professor in the sample in May 1997, inviting him or her to participate and provide a number where he or she could be reached during the summer by telephone. An additional 122 interviews were obtained by calling professors in the sample at work in August and September. To minimize possible effect due to the order of questions, the survey was pretested and some questions were asked in random order.Respondents were asked which one in a series of qualities were “absolutely essential” to be imparted to prospective teacher: 84% of the respondents selected having teachers who are “life-long learner and constantly updating their skills”; 41%, having teachers “trained in pragmatic issues of running a classroom such as managing time and preparing lesson plans”; 19% for teachers to “stress correct spelling, grammar, and punctuation”; and 12%, for teachers to “expect students to be neat, on time, and polite”.**
+
+Target population: Education professors in America.
+
+Sampling frame: It cound be the list of 34,000 education professor in colleges and universities across the country.
+
+Sampling unit: The professor of education who received a call from the investigator.
+
+Observation unit: The professor of education who received a call from the investigator.
+
+Possible sources of selection bias or inaccuracy of responses:
+
+This study could suffer from selection bias, because of its design limitations.
+
+a. The problem setting is not specific and reasonable. For example, some words in questions like “absolutely essential” are not specific. the options are not comprehensive enough to cover all optional teacher qualities or the options should not be set for this kind of question and should be freely answered by the professor.
+b. Maybe because of the telephone survey, the tone of the questioner is directional, which leads to the deviation of the answer.
+c. Maybe the professors who answer these questions are those professors whose ideas are not accepted by the mainstream and are different from the common ideas and want to express their views in this way. This leads to a bias in choice.
+d. There may be a great difference between those who participate in the survey and those who do not participate in the survey on the essential qualities of future teachers.
+
+## PART II
+
+**1.	Read the article AcensusinwhichallAmericanscount by Roush (1996), which describes a proposal for using sampling in the 2000 U.S. census. What are the main arguments for and against using sampling in 2000?**
+
+main argument:
+
+The main argument for using sampling in 2000 U.S. census is that the Bureau of statistics believes that the current population of the United States is too large and the mobility is too large for simple physical statistics. Therefore, they recommend the use of sampling in the census. They also have a plan, and the Bureau has designed two-stage sampling for the 2000 census. First, after individuals in at least 90% of households in each census area are directly counted, officials will spend a lot of energy interviewing one resident in every 10 unresponsive families, and will use the follow-up data to map the remaining non responders. The use of sampling and statistical adjustment technology will have its own defects, including high built-in error coefficient in small geographical scale, and sampling will lead to selection error and measurement error.
+
+against:
+
+Republicans in Congress say that choosing the best statistical model for estimation and adjustment is an "inherent subjective" process, which opens the door to political intervention, so they call on the Census Bureau to conduct Traditional unsampled physical statistics in 2000.
+
+## PART III
+
+**1.	apipop data. The data were collected from a study for student performance in California schools. The Academic Performance Index (API) is computed for all California schools based on standardized testing of students. The data contain information for all schools with at least 100 students. The population data in apipop included 6194 observations on 37 variables. The outcome variable of interest is API year 2000, api00. We will make use the previous year data of the same outcome measure, that is, api99 as an auxiliary variable.**
+
+**a.	Examine the distributions of these two measures, api00 and api99, for each category(or level) of school type variable (stype). Note: School type variable has three categories–Elementary/Middle/High School. Comment on the distributions at each level of this variable. Are they symmetric or asymmetric?**
+
+```{r}
+# read data
+apipop<-read.csv("C:/Users/Zada/Desktop/Sampling technique/midterm/apipop.csv")
+# Select the data of each layer
+E<-apipop[(apipop$stype == "E"),]
+M<-apipop[(apipop$stype == "M"),]
+H<-apipop[(apipop$stype == "H"),]
+# For primary schools, check the distribution of api00
+summary(E$api00)
+api00E<-data.frame(E$api00)
+ggplot(data = api00E, aes(x = E$api00)) +
+geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) +
+geom_density(kernel = "gaussian", size = 1, aes(E$api00)) +
+labs(title = "Density of E$api00")
+# For primary schools, check the distribution of api99
+summary(E$api99)
+api99E<-data.frame(E$api99)
+ggplot(data = api00E, aes(x = E$api99)) +
+geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) +
+geom_density(kernel = "gaussian", size = 1, aes(E$api99)) +
+labs(title = "Density of E$api99")
+# For middle schools, check the distribution of api00
+summary(M$api00)
+api00M<-data.frame(M$api00)
+ggplot(data = api00M, aes(x = M$api00)) +
+geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) +
+geom_density(kernel = "gaussian", size = 1, aes(M$api00)) +
+labs(title = "Density of M$api00")
+# For middle schools, check the distribution of api99
+summary(M$api99)
+api99M<-data.frame(M$api99)
+ggplot(data = api99M, aes(x = M$api99)) +
+geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) +
+geom_density(kernel = "gaussian", size = 1, aes(M$api99)) +
+labs(title = "Density of M$api99")
+# For high schools, check the distribution of api00
+summary(H$api00)
+api00H<-data.frame(H$api00)
+ggplot(data = api00H, aes(x = H$api00)) +
+geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) +
+geom_density(kernel = "gaussian", size = 1, aes(H$api00)) +
+labs(title = "Density of H$api00")
+# For high schools, check the distribution of api99
+summary(H$api99)
+api99H<-data.frame(H$api99)
+ggplot(data = api00H, aes(x = H$api99)) +
+geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) +
+geom_density(kernel = "gaussian", size = 1, aes(H$api99)) +
+labs(title = "Density of H$api99")
+```
+
+By looking at the six graphs above, we can see that each graph is basically symmetrical, especially the data collected in 1999 for primary school types.
+
+**b.1	We pretend the given data not population data, for variable api00, within each category of stype variable, compute estimated mean and variance, that is, µˆh, σˆh2 where h = 1 (Elementary), 2 (Middle), 3 (High School). Use these estimates as parameters to estimate the number of subjects required to be 95% certain, given that the estimated mean api00 is within .002% of the true mean, under stratified random sampling. The true mean API is given as 654. Hint: e = .00002∗ µy.**
+
+```{r}
+# 另一种按照特定要求计算数据集里元素均值的方法（方差同理）：
+#mu <- aggregate(api00 ~ stype, data = data, mean)
+u1<-sum(E$api00)/nrow(E)
+u2<-sum(M$api00)/nrow(M)
+u3<-sum(H$api00)/nrow(H)
+c(u1,u2,u3)
+s1_2<-var(E$api00)
+s2_2<-var(M$api00)
+s3_2<-var(H$api00)
+sd1<-sd(E$api00)
+sd2<-sd(M$api00)
+sd3<-sd(H$api00)
+c(s1_2,s2_2,s3_2)
+```
+
+We can see the estimated means are (672.0627,655.7230,633.7947), the estimated variance within the layer are (17251.85,15554.34,11589.87).
+
+**b.2 From the population data, you will get N1, N2, N3 as population stratum sizes.From the obtained information, e.g., stratum sizes, estimated means, estimated variances, you need to determine which allocation (proportional allocation or optimal allocation) would be the best choice of allocation. From day4 lecture, you need to find out which formula to compute the sample size based on your choice.**
+
+We can see the estimated means are (672.0627,655.7230,633.7947), the estimated variance within the layer are (17251.85,15554.34,11589.87). We can see from the above results that the estimated variance within the layer is quite different. I think the optimal allocation can be used.
+
+Next, I will use the above mean and variance to estimate the sample size under proportional allocation and optimal allocation respectively.
+
+```{r}
+# Calculate population of layers:1,2,3:
+N1<-nrow(E)
+N2<-nrow(M)
+N3<-nrow(H)
+c(N1, N2, N3)
+# The estimated mean number of API is 654.
+# Calculate paih
+pai1<-(N1*sd1)/(N1*sd1+N2*sd2+N3*sd3)
+pai2<-(N2*sd2)/(N1*sd1+N2*sd2+N3*sd3)
+pai3<-(N3*sd3)/(N1*sd1+N2*sd2+N3*sd3)
+e=0.00002*654
+# the within-stratum variance, between-stratum variance and Total variance.
+sby_2<-(N1*(672.0627-654)^2+N2*(655.7230-654)^2+N3*(633.7947-654)^2)/(N1+N2+N3)
+swy_2<-(N1*17251.85+N2*15554.34+N3*11589.87)/(N1+N2+N3)
+sy_2<-sby_2+swy_2
+# The sample size is calculated under the proportional allocation
+a<-swy_2/654^2
+b<-sby_2/swy_2
+n_b=round(((1.96^2*(N1+N2+N3)*a)/(1+b))/((N1+N2+N3)*e^2+1.96^2*a/(1+b)))
+n_b
+# The sample size is calculated under the optimal allocation
+a1<-1.96^2/(N1+N2+N3)^2
+b1<-(N1^2*s1_2)/(654^2*pai1)
+b2<-N2^2*s2_2/(654^2*pai2)
+b3<-N3^2*s3_2/(654^2*pai3)
+c1<-N1*s1_2/654^2
+c2<-N2*s2_2/654^2
+c3<-N3*s3_2/654^2
+
+n_o=round(a1*(b1+b2+b3)/(e^2+a1*(c1+c2+c3)))
+n_o
+```
+
+We can see the population stratum sizes are (4421,1018,755).
+
+Analysis:We can see that when using proportional distribution, the estimated sample size is 740; when using optimal allocation, the estimated sample size is 748. It can be seen again that the optimal proportion is better than proportional allocation.
+
+**b.3 After determining the sample size (i.e., n), you need to compute n1, n2, n3 for each stratum. Use day3 lecture as your resources for these computations.**
+
+```{r}
+popprop<-n_o/nrow(apipop)
+# Create Strata
+apipop =
+apipop%>%
+mutate(
+### Separate strata
+poststrat = case_when(
+apipop$stype == "E" ~ "n1",
+apipop$stype == "M" ~ "n2",
+apipop$stype == "H" ~ "n3"
+) %>%
+### Specify factor levels
+factor(levels=c("n1", "n2","n3"))
+)
+apipop %>% select(poststrat) %>% table()
+# Calculate the number of each layer
+n=748
+a1<-round(n*(N1*sd1)/((N1*sd1+N2*sd2+N3*sd3)))
+a2<-round(n*(N2*sd2)/((N1*sd1+N2*sd2+N3*sd3)))
+a3<-round(n*(N3*sd3)/((N1*sd1+N2*sd2+N3*sd3)))
+c(a1,a2,a3)
+# Sampling of each layer
+set.seed(1)
+sub1<-sample(nrow(E),a1, replace = FALSE, prob = NULL)
+sample1<-E[sub1,]
+sub2<-sample(nrow(M),a2, replace = FALSE, prob = NULL)
+sample2<-M[sub2,]
+sub3<-sample(nrow(H),a3, replace = FALSE, prob = NULL)
+sample3<-H[sub3,]
+ndata<-merge(sample1,sample2,all = TRUE)
+sampled_api00_strata<-merge(sample3,ndata,all = TRUE)
+```
+
+We can see that the sample size of each layer are (551,120,77).
+
+**c.	From the results of part b, draw a sample with stratified sampling design. Estimate the mean and SE of API year 2000, api00, and give a 95% CI for the mean. Interpret the results in the context of the study.**
+
+```{r}
+# Sample data box
+api<-sampled_api00_strata
+# Calculate the number of samples in each layer
+npop<-table(api$stype)
+# Calculate weight
+api$weight[(api$stype == "E")]<-N1/npop[1]
+api$weight[(api$stype == "M")]<-N2/npop[3]
+api$weight[(api$stype == "H")]<-N3/npop[2]
+# Calculate fpc
+api$fpc[(api$stype == "E")]<-N1
+api$fpc[(api$stype == "M")]<-N2
+api$fpc[(api$stype == "H")]<-N3
+# Layered design
+samp_des <- svydesign(ids=~1, strata=~stype, 
+                      weights=~weight, 
+                      fpc =~fpc, 
+                      data = api)
+
+svymean.est <- svymean(~api00,samp_des, data=~api)
+svymean.est
+# CI for total mdata
+confint(svymean(~api00, samp_des))
+```
+
+As we can see, we have a sample——api with a layered sampling design. And  the estimation of the mean value of API in 2000 is 664.43, this shows that the average performance of California school students is 664.43 after being converted into API; the estimation of SE of API in 2000 is 4.3237, We can see that se is not big, which means that most students' APIs are similar; the 95% confidence interval of API in 2000 is (655.953,672.9014).
+
+**d.	Create a dichotomous variable, poststrat, that has value of 0 if score is 631 or less; and1 if score is greater than 631. Use this variable as a poststratification indicator to estimate the mean and SE of API year 2000, api00, and give a 95% CI. Interpret the results in the context of the study. Does the poststratification help improve the precision of mean estimation of the API score year 2000 compared to that of pure stratification obtained from part c?**
+
+According to the result of question B, I choose the optimal allocation method as the sampling method.
+
+```{r}
+# Create Strata
+apipop =
+apipop%>%
+mutate(
+### Separate strata
+poststrat = case_when(
+api00 <= 631 ~ "0",
+TRUE ~ "1"
+) %>%
+### Specify factor levels
+factor(levels=c("0", "1"))
+)
+apipop %>% select(poststrat) %>% table()
+# Basic data
+N1<-2527
+N2<-3667
+n=748
+data1<-apipop[(apipop$poststrat == "0"),]
+data2<-apipop[(apipop$poststrat == "1"),]
+sd1<-sd(data1$api00)
+sd2<-sd(data2$api00)
+# Calculate the number of each layer
+c1<-round(n*(N1*sd1)/((N1*sd1+N2*sd2)))
+c2<-round(n*(N2*sd2)/((N1*sd1+N2*sd2)))
+ch<-c(c1,c2)
+ch
+# Sampling of each layer
+set.seed(1)
+sub1<-sample(nrow(data1),c1, replace = FALSE, prob = NULL)
+sample1<-data1[sub1,]
+sub2<-sample(nrow(data2),c2, replace = FALSE, prob = NULL)
+sample2<-data2[sub2,]
+apisample<-merge(sample1,sample2,all = TRUE)
+# Run Stratified Survey
+## Set weight and FPC
+### Create strata weights as N_strata/N_sample
+apisample$weight[(apisample$poststrat =="0")]<-N1/ch[1]
+apisample$weight[(apisample$poststrat== "1")]<-N2/ch[2]
+#
+apisample$fpc[(apisample$poststrat== "0")]<-N1
+apisample$fpc[(apisample$poststrat== "1")]<-N2
+
+# #First, we create the survey design-a SRS
+apipop_survey_design<- svydesign(ids=~1, strata=~ poststrat, weights=~weight, fpc =~fpc,
+data = apisample)
+# Now we will post-stratify by poststrat.
+apipop_type_counts <- data.frame(poststrat=c("0","1"), Freq=c(2527,3667))
+# Poststratify on poststrat
+post_stra<-postStratify(apipop_survey_design, ~poststrat, apipop_type_counts)
+svymean.est <-svymean(~api00, post_stra)
+svymean.est
+confint(svymean.est)
+```
+
+As we can see, the estimation of the mean value of API in 2000 is 659.18, this shows that the average performance of California school students is 659.18 after being converted into API; the estimation of SE of API in 2000 is 2.4144, We can see that se is not big, which means that most students' APIs are similar; the 95% confidence interval of API in 2000 is (654.4469, 663.911).
+
+Comparison: Yes, the poststratification do help improve the precision of mean estimation of the API score year 2000 compared to that of pure stratification. the estimation of SE of API by using  poststratification in 2000 is 2.4144, the estimation of SE of API by using  pure stratification in 2000 is 4.3237. Obviously,2.4144 < 4.3237, so the estimation of se of API by using poststration in 2000 is less than the estimation of SE of API by using  pure stratification in 2000, then  the poststratification do help improve the precision of mean estimation of the API score year 2000.
+
+**e.	Estimate the mean and SE of API year 2000, api00, using ratio estimation and regressionestimation. Interpret the results in the context of the study. Which approach, ratio estimation or regression estimation, performs better? Justify your answer. Construct 95% CI for the mean outcome variable of interest. Interpret the results.**
+
+```{r}
+# Ratio Estimation
+# n
+n = c( 268,480)
+# N.pop
+N.pop = c(2527, 3667) 
+#api
+api<-apisample
+# to see if TOTMEDEX is correlated with PHARMEXP
+ggplot(data = api, aes(x = api99, y = api00)) + geom_point(color = "darkred", size = 2) +
+labs(title= "api00 vs api99")
+api =
+api %>%
+mutate(
+# add strata population size to each sampled unit
+N = case_when(
+poststrat=="0" ~ N.pop[1],
+TRUE ~ N.pop[2]
+)
+)
+strata_des <- svydesign(ids=~1, strata=~poststrat, fpc=~fpc, data = api)
+# ratio estimation
+api.ratio <- svyratio(~api00,~api99, design=strata_des)
+Npop.total = nrow(apipop)
+popmean = data.frame(api99=(1/Npop.total)*sum(apipop$api99, na.rm=TRUE))
+# est. and SE for mean of api00
+predict(api.ratio, popmean$api99)
+#95% CI
+CI1_left<- 664.4665-1.96*1.020033
+CI1_right<-664.4665+1.96*1.020033
+CI1<-c(CI1_left,CI1_right)
+CI1
+# regression estimation
+reg.api00 <- svyglm(api00 ~ api99, design = strata_des)
+predict(reg.api00, newdata=popmean)
+#95% CI
+CI2_left<- 663.93-1.96*0.891
+CI2_right<-663.93+1.96*0.891
+CI2<-c(CI2_left,CI2_right)
+CI2
+```
+
+As we can see, by using ratio estimation, the estimation of the mean value of API in 2000 is 664.4665, this shows that the average performance of California school students is 664.4665 after being converted into API; the estimation of SE of API in 2000 is 1.020033, We can see that SE is not big, which means that most students' APIs are similar; the 95% confidence interval of API in 2000 is (662.4672,666.4658).
+
+As we can see, by using regression estimation, the estimation of the mean value of API in 2000 is 663.93, this shows that the average performance of California school students is 663.93 after being converted into API; the estimation of SE of API in 2000 is 0.891, We can see that SE is not big, which means that most students' APIs are similar; the 95% confidence interval of API in 2000 is (662.1836,665.6764).
+
+Comparison: As can be seen from the results, the estimation of the mean value of API in 2000 and the estimation of SE of API in 2000 by using regression estimation are smaller than those by ratio estimation. So Regression estimate performs better.
+
+**f.	Estimate the mean and SE of API year 2000, api00, using the combination of strati-fication (stype) sampling design and poststratification (poststrat) as a design-based incorporated with model-based approach, using either ratio estimation or regression estimation (based on your choice from part e). Interpret the results in the context of the study.**
+
+According to the result in question f, I choose regression estimation, but for better comparison and academic rigor, I still calculate the relevant results of ratio estimation.
+
+From the result of d question, we can see that the poststratification do help improve the precision of mean estimation of the API score year 2000 compared to that of pure stratification. And according to the result of e question, Regression estimate performs better. So I will combine the  poststratification and regression estimation method to estimate the mean and SE of API year 2000, api00.
+
+```{r}
+# Ratio Estimation
+# n
+n = c( 268,480)
+# N.pop
+N.pop = c(2527, 3667) 
+#api
+api<-apisample
+api =
+api %>%
+mutate(
+# add strata population size to each sampled unit
+N = case_when(
+poststrat=="0" ~ N.pop[1],
+TRUE ~ N.pop[2]
+)
+)
+strata_des <- svydesign(ids=~1, strata=~poststrat, fpc=~fpc, data = api)
+apipop_type_counts <- data.frame(poststrat=c("0","1"), Freq=c(2527,3667))
+# Poststratify on poststrat
+post_stra<-postStratify(strata_des, ~poststrat, apipop_type_counts)
+# ratio estimation
+api.ratio <- svyratio(~api00,~api99, design=post_stra)
+Npop.total = nrow(apipop)
+popmean = data.frame(api99=(1/Npop.total)*sum(apipop$api99, na.rm=TRUE))
+# est. and SE for mean of api00
+predict(api.ratio, popmean$api99)
+#95% CI
+CI1_left<- 664.4665-1.96*1.020033
+CI1_right<-664.4665+1.96*1.020033
+CI1<-c(CI1_left,CI1_right)
+CI1
+# regression estimation
+reg.api00 <- svyglm(api00 ~ api99, design = post_stra)
+predict(reg.api00, newdata=popmean)
+#95% CI
+CI2_left<- 663.93-1.96*0.891
+CI2_right<-663.93+1.96*0.891
+CI2<-c(CI2_left,CI2_right)
+CI2
+```
+
+As we can see, by using regression estimation, the estimation of the mean value of API in 2000 is 663.93, this shows that the average performance of California school students is 663.93 after being converted into API; the estimation of SE of API in 2000 is 0.891, We can see that SE is not big, which means that most students' APIs are similar; the 95% confidence interval of API in 2000 is (662.1836,665.6764). 
+
+It is obvious that for this data, when regression estimation method is used, whether it is poststratification or pure stratification, the results are the same, which shows that when using regression estimation method, the model has reached the optimal.
+
+**g.	Write a paragraph of your comparisons for the results obtained from parts b-f.**
+
+For this data, because there is a certain gap between the variance within the layer, so I use the optimal allocation method to extract samples. After comparing the c. and d. questions, we found that the SE of the data using the poststratification method is smaller, so we choose the poststratification as the stratified method. After comparing the ratio estimation and regression estimation in e. question, we find that the SE of the regression estimation is smaller than that of the ratio estimation, so I adopt the method, make it more suitable for regression estimation of this data. Finally, it is found that no matter what stratified method is used, the regression estimation results are the same. To a certain extent, I think it can be explained that it is more important to adopt the pair estimation method than to choose the correct stratified method.

@@ -1,0 +1,279 @@
+---
+title: "Quiz 6"
+author: "Daihuan Cai"
+date: "2020/7/29"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+library(readr)
+library(mosaic)
+library(survey)
+library(sampling)
+library(ICC)
+library(ggplot2)
+```
+
+## 1
+
+**1.	Senturia et al. (1994) describe a survey taken to study how many children have access to guns in their households.  Questionnaires were distributed to all parents who attended selected clinics in the Chicago area during a one-week period for well or sick child visits.**
+
+**1.a.	Suppose that the quantity of interest is percentage of the households with guns.  Describe why this is a cluster sample.  What is the psu?  The ssu?  Is it a one-stage or two stage cluster sample? **
+
+Because in this survey, the investigators first selected the clinic, and then distributed questionnaires to all parents who attended selected clinics in the Chicago area during a one-week period for well or sick child visits. It shows that the investigators choose cluster first, and then select the sampling unit. So this is a cluster sampling, and in this data the cluster is natural divided.
+
+PSU: Selected clinics.
+
+SSU: All parents taking part in the survey.(All parents attending selected clinics)
+
+Cluster sampling type: This is a one-stage cluster sampling, because we chose all the parents who attended the selected clinic.
+
+**1.b.	What is the sampling population for this study?  Do you think this sampling procedure results in representative sample of households with children?  Why or why not? **
+
+Sampling population: All parents who attended selected clinics in the Chicago area during a one-week period for well or sick child visits.
+
+Analysis: I don't think so. First of all, when we choose clusters, we choose clinics, but ignore the formal hospitals and the parents of healthy children who do not seek medical treatment. In addition, a certain period may coincide with the outbreak of infectious diseases, and the young children with weak resistance may be the main body of the investigation.
+
+## 2
+
+ **2.Kleppel et al. (2004) report on a study of wetland in upstate New York.  Four wetlands were selected for the study:  Two of the wetlands drain watersheds from small towns and the other two drain suburban watersheds.  Quantities such as pH were measured at two to four randomly selected sites within each of the four wetlands. **
+ 
+ **2.a.	Describe why this is a cluster sample.  What are the psus?  The ssus?  How would you estimate the average pH in the suburban wetlands? **
+ 
+Because in this survey, investigators want to investigate the pH of wetlands in northern New York. First, the investigators selected four wetlands, and then selected two to four sites from each of the four wetlands. This means that in this problem, the investigator first selects the cluster (wetlands) and then the sites in the cluster, so this is a cluster sample.
+
+PSU: Four wetlands were selected for the study.
+
+SSU: Two to four randomly selected sites within each of the four wetlands.
+
+Steps: First, we chose two wetlands that drain the suburban watershed. Then randomly select the selected sites in the wetland, and integrate the information of all the sites to get samples. Finally, the average pH of the sample was calculated to estimate the average pH of the suburban wetland.
+
+**2.b.	The authors used Student’s two sample t-test to compare the average pH from the sites in the suburban wetlands with the average pH from the sites in the small town wetlands, treating all sites as independent.  Is this analysis appropriate?  Why, or why not? **
+
+Analysis: This analysis is not appropriate. Because the sites we choose are not necessarily independent. For example, the two adjacent wetlands may have similar pH, and the two adjacent sites may have similar pH. because we are randomly selected, such situations may occur. So I think this analysis is wrong.
+
+## 3
+
+ **3.Baseball data. Jennifer Boshes has compiled the data from Forman (2004) and publicly available salary information. The data file baseball.csv (posted on Sakai course site) contains statistics on 797 baseball players from the rosters of all major league teams in November, 2004. You will treat the data in the file as a population and draw samples from it using different designs. It has been known that salary is asymmetric distributed; furthermore, (natural) log-transformation is applied to meet normality assumption. Thus, the logtransformed data should be used for estimation.  Hereafter, use back transformation to obtain the results.   These steps should be done with all the follow questions when applied. **
+ 
+ **3.a.	Take a one-stage cluster sample with teams as the psus. Your sample should have approximately 150 players altogether.  Describe how you selected your sample.**
+ 
+```{r}
+# Reset default address
+setwd("C:/Users/Zada/Desktop/Sampling technique/day6")
+# read data
+baseball<-read.csv("baseball.csv")
+# Get the number of groups
+team.id <- unique(baseball$team)
+N<-length(team.id)
+# Get the total number of people
+nrow(baseball)
+# compute M
+M<-nrow(baseball)/length(team.id)
+M
+```
+
+We can see that each cluster has about 26.56667 players. Obviously, the number of players can only be an integer. However, in order to ensure the accuracy of the follow-up data, no changes are made here. Next, we will calculate the number of clusters selected (psu). Finally, we get the sample.
+
+```{r}
+# Number of groups selected(psu)
+team_num<-150/M
+team_n<-ceiling(team_num)
+team_n
+# sample and sample size
+# Seed setting
+set.seed(1234)
+# sample
+# sample team
+team.id.sample <- sample(team.id, size =6,replace = F) 
+team.id.sample_n<-length(team.id.sample)
+# Final sampling
+baseball.sample <- baseball %>% filter(team %in% team.id.sample) %>%
+mutate(weight = N/team.id.sample_n) %>%
+mutate(fpc = 1/weight)
+# sample size
+baseball.sample_n<-nrow(baseball.sample)
+baseball.sample_n
+```
+
+As we can see, we ended up with a sample of 157 people with six clusters.
+
+As we know, there are always some people with higher salary and some people with lower salary in the team. Therefore, the wage difference within each team should be relatively large, and the salary structure of each team should be similar. Therefore, the difference within the team is very large, and the difference between teams is small, which is in line with the conditions of cluster sampling.
+
+**3.b.	Draw side-by-side boxplots of logsal for the teams in your sample.**
+
+```{r}
+# Draw side-by-side boxplots of logsal for the teams
+baseball.sample %>% ggplot(aes(x=team,y=salary,color=team))+geom_boxplot() +
+labs(title= "Boxplots by teams - Player's salary")
+```
+
+**3.c.	Use your sample to estimate the salary mean and give a 95% CI. **
+
+```{r}
+# Draw the wage histogram and density map before logarithm
+summary(baseball.sample$salary) 
+ggplot(data = baseball.sample, aes(x =salary)) + geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) + geom_density(kernel = "gaussian", size = 1, aes(salary)) + labs(title = "Density of salary")
+# Draw the wage histogram and density map after logarithm
+baseball.sample$salary<-log(baseball.sample$salary)
+summary(baseball.sample$salary) 
+ggplot(data = baseball.sample, aes(x =salary)) + geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) + geom_density(kernel = "gaussian", size = 1, aes(salary)) + labs(title = "Density of salary")
+```
+
+We can see that after logarithm, the data tends to be more normal distribution.
+
+```{r}
+# 1 - level Cluster Sampling design
+clust1.des <-svydesign(data=baseball.sample, weights = ~weight, fpc = ~fpc, ids = ~team)
+summary(clust1.des)
+# Calculate the estimate of the mean
+mean.est <- svymean(~salary, design=clust1.des, data=baseball.sample)
+mean.est
+# the estimate of the mean
+exp(13.968)
+# the estimate of the SE
+exp(0.196)
+# get 95% CI
+exp(confint(mean.est))
+```
+
+We can see that by only using 1 - level Cluster Sampling, the estimated mean of salary is 1164730, the standard error of salary is 1.216527 and the 95% confidence interval is (793506.5, 1710914).
+
+**3.d.	Estimate the salary mean and give a 95% CI using ratio estimation with cluster size as the auxiliary variable.  Compare the obtained results with those from part c.  Which results have higher precision?  Explain why the results makes sense to you.**
+
+```{r}
+# ratio estimation
+# Add cluster_size to the sample dataset
+baseball.sample=baseball.sample%>%group_by(team)%>%mutate(cluster_size=n())
+# to see if salary is correlated with cluster_size
+ggplot(data = baseball.sample, aes(x = cluster_size, y = salary)) + geom_point(color = "darkred", size = 2) + labs(title= "salary vs cluster_size")+geom_point() + geom_smooth(method = "lm") 
+# 1 - level Cluster Sampling design
+clust1.des <-svydesign(data=baseball.sample, weights = ~weight, fpc = ~fpc, ids = ~team)
+# ratio estimation
+clust2.ratio <- svyratio(~salary, ~cluster_size, clust1.des)
+names(clust2.ratio)
+clust2.ratio
+# get 95% CI for ratio estimation
+confint(clust2.ratio)
+# calculate the mean of cluster_size
+cluster_size_mean <- data.frame(cluster_size=M)
+cluster_size_mean
+# get estimates of the mean and SE
+clust3.ratio<-predict(clust2.ratio,cluster_size_mean$cluster_size)
+exp(clust3.ratio$total)
+exp(clust3.ratio$se)
+# get 95% CI for salary
+exp(confint(clust2.ratio)*M)
+```
+
+We can see that by only using 1 - level Cluster Sampling and ratio estimation, the estimated mean of salary is 1408952, the standard error of salary is 1.29042 and the 95% confidence interval is (854805, 2322337).
+
+```{r}
+# ratio estimation/SRS
+bilv<-1.29042^2/1.216527^2
+bilv
+```
+
+Obviously, the SE (1.216527) obtained by only 1 - level Cluster Sampling was smaller than the SE (1.29042) estimated by ratio estimation at that time. Moreover, it can be seen from the graph that salary has little relationship with cluster size, In addition, when only 1 - level Cluster Sampling was used to survey one person, it was equivalent to 1.125171 people surveyed by using ratio estimation. So only 1 - level Cluster Sampling is more accurate. And it's convenient in this data.
+
+The results show that when there is no clear linear relationship between the two variables, the effect of ratio estimation is not necessarily better than that of only 1 - level Cluster Sampling, and the calculation of only 1 - level Cluster Sampling is also simpler.
+
+**3.e.	Estimate the proportion of players in the data set who are pitchers, and give a 95% CI.  Note: look at variable DOS with category “P” for pitcher.**
+
+We can assume a variable again, which is 1 if the player is a pitcher and 0 if the player is not a pitcher.
+
+In this way, estimate the proportion of players in the data set who are pitchers is transformed into estimating the mean of variable pitchers.
+
+```{r}
+# Reset variables
+baseball$d<-ifelse(baseball$POS=="P",1,0)
+baseball.sample$d<-ifelse(baseball.sample$POS=="P",1,0)
+# 1 - level Cluster Sampling design
+clust1.des <-svydesign(data=baseball.sample, weights = ~weight, fpc = ~fpc, ids = ~team)
+# calculate the mean of d1=(Percentage of pitchers)
+mean.est <- svymean(~d, design=clust1.des, data=baseball.sample)
+mean.est
+# calculate 95% CI
+confint(mean.est)
+```
+
+We can see that the estimated mean of the proportion of players in the data set who are pitchers is 0.47134, the standard error of the proportion of players in the data set who are pitchers is 0.0133 and the 95% confidence interval is (0.4451982, 0.497477).
+
+**3.f.	If the domain of interest is players who are pitchers, estimate the salary mean for pitchers.  Hint: for domain estimation, we assume N_d (population size for the domain is unknown.) **
+
+```{r}
+# Reset variables
+baseball.sample$d<-ifelse(baseball.sample$POS=="P",1,0)
+baseball.sample$u <- baseball.sample$d*baseball.sample$salary
+# 1 - level Cluster Sampling design
+clust1.des <-svydesign(data=baseball.sample, weights = ~weight, fpc = ~fpc, ids = ~team)
+# calculate the mean of u=(salary of pitchers)
+mean.est<-svyratio(~u, ~d, design = clust1.des)
+mean.est
+exp(mean.est$ratio)
+# calculate the SE of u=(salary of pitchers)
+exp(mean.est$var)
+# calculate 95% CI
+exp(confint(mean.est))
+```
+
+We can see that the estimated mean of the salary for pitchers is 1049010, the standard error of the salary for pitchers is 1.065104 and the 95% confidence interval is (641219.6, 1716139).
+
+**3.g.	Use ratio and regression estimations with DOS as the auxiliary variable, estimate the salary mean and give a 95% CI of a pitcher.  Which estimation (ratio or regression) is more suitable?  Explain why?**
+
+```{r}
+# ratio estimation
+# to see if salary is correlated with cluster_size
+ggplot(data = baseball.sample, aes(x = POS, y = salary)) + geom_point(color = "darkred", size = 2) + labs(title= "salary vs POS")
+# Calculate the number of each POS then add to the original sample set
+baseball.sample<- baseball.sample%>%group_by(POS)%>%mutate(DOS=n())
+# 1 - level Cluster Sampling design
+clust1.des <-svydesign(data=baseball.sample, weights = ~weight, fpc = ~fpc, ids = ~team)
+# ratio estimation
+clust2.ratio <- svyratio(~salary, ~DOS, clust1.des)
+names(clust2.ratio)
+clust2.ratio
+# get 95% CI for ratio estimation
+confint(clust2.ratio)
+# calculate the mean of cluster_size
+DOS_mean<-mean(baseball.sample$DOS)
+cluster_size_mean <- data.frame(DOS=mean(baseball.sample$DOS, na.rm = T))
+cluster_size_mean
+# get estimates of the mean and SE
+clust3.ratio<-predict(clust2.ratio,cluster_size_mean$DOS)
+exp(clust3.ratio$total)
+exp(clust3.ratio$se)
+# get 95% CI for salary
+exp(confint(clust2.ratio)*DOS_mean)
+```
+
+By using DOS as auxiliary variable and ratio estimation, We can see that the estimated mean of the salary for pitchers is 1165170, the standard error of the salary for pitchers is 1.488205 and the 95% confidence interval is (534535.5, 2539815).
+
+```{r}
+# regression estimation
+clust1.reg.baseball.sample <- svyglm(salary~DOS, design = clust1.des)
+# total est. for DOS
+t.x <- data.frame(DOS = sum(baseball.sample$DOS))
+clust1.reg.pred <- predict(clust1.reg.baseball.sample, newdata=t.x, total=nrow(baseball))
+clust1.reg.pred <- data.frame(clust1.reg.pred)
+# mean est. for salary
+clust1.reg.mean = data.frame(est_mean =clust1.reg.pred$link/nrow(baseball),
+SE = clust1.reg.pred$SE/nrow(baseball))
+lb=clust1.reg.mean$est_mean-1.96*clust1.reg.mean$SE
+ub=clust1.reg.mean$est_mean+1.96*clust1.reg.mean$SE
+exp(clust1.reg.mean)
+# 95% CI
+lb<-exp(lb)
+ub<-exp(ub)
+c(lb,ub)
+```
+
+By using DOS as auxiliary variable and regression estimation, We can see that the estimated mean of the salary for pitchers is 1292365, the standard error of the salary for pitchers is 1.167914 and the 95% confidence interval is (953366.8, 1751905.3).
+
+Comparison: I think regression estimation is more appropriate because SE (1.167914) calculated by regression estimation is smaller than SE (1.488205) calculated by ratio estimation; moreover, from the relationship between player salary and player type, it can be seen that there is no obvious relationship between salary and type of player, so regression estimation is better.

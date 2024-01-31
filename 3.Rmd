@@ -1,0 +1,196 @@
+---
+title: "quiz 3"
+author: "Daihuan Cai"
+date: "2020/7/22"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(rmarkdown)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(ggbeeswarm)
+library(survey)
+```
+## Q1
+
+**1. What stratification variable(s) would you use for each of following situations: **
+
+**a.	A political poll to estimate the percentage of registered voters in Oregon that approve of the governor’s performance. **
+
+In my opinion, annual personal income can be used as a stratified variable.
+Low income group or poor people: annual income is less than or equal to $16,000.
+Working class: annual income is more than $16000 less than or equal to $35,000.
+Lower middle class: annual income is more than $3,5000 less than or equal to $100,000.
+Upper middle class: annual income is more than $100,000 less than or equal to $500,000.
+Upper class: annual income is more than $500,000.
+Explanation: the income level reflects the living standard to a certain extent, while the public's evaluation of the governor is based on their own living standard to a certain extent. For people of different classes, the factors affecting their living standards are different, so I choose the income level as the stratified variable.
+
+**b. An e-mail survey of students at your university, to estimate the total amount of money students spend on textbooks in a term.**
+
+I think the majors can be used as stratified variable.Because the courses offered by different majors are different and the required knowledge reserves are different, hence the number and types of textbooks purchased by students are different; for students of the same major, the courses they have learned are generally the same, only some courses are different, so this part of the difference can be ignored.
+
+**c. A sample of high schools in New York City, to estimate what percentage of high schools offers one or more classes in computer programming.**
+
+I think the organizers can be used as stratified variable.
+Public schools: organized by the state government.
+Private schools: organized by non-governmental organizations.
+Generally speaking, the number of students in private schools is small and the level of students is more uniform. Therefore, the ratio of students to computer equipment may be lower than that of public schools, hence private schools may have more computer courses.
+
+**d. A sample of public libraries in California to study the availability of computer resources, and the per capital expenditures.**
+
+I think we can use the quarterly visits of the library database as a stratified variable. For example, I group libraries with more than 500000 visits per quarter and libraries with less than or equal to 500000 visits per quarter. Since the survey is about the availability of computer resources, the higher the access to the library database, the higher the availability of computer resources.
+
+**e. A survey of anglers visiting a freshwater lake, to learn about which species of fish are preferred. **
+
+I think we can use how much time people have been fishing every month as a stratified variable. Because if people fish more often every month, to a certain extent, the more patient and experienced they are, the recommended fish may not be easy to fish. People who fish less often may just take fishing as a temporary entertainment, and they don't have so much patience and like to catch fish that is easy to catch.
+
+**f. An aerial survey to estimate the number of walrus in the pack ice near Alaska between 173o East and 154o West longitude.**
+
+I think we can choose the areas of floating ice as stratified variable. Because the larger the area of the ice floes, the larger the area where seals can rest. For example, I group ice floes with an area greater than 50 square meters and those with an area less than or equal to 50 square meters. So the size of the ice floe area is directly related to the number of seals. Therefore, the floating ice areas are selected as stratified variable.
+
+## Q3
+
+**a. Discuss possible sources of nonsampling error in this survey.**
+
+1.In general, the inspection of radioactive elements requires professional instruments or professional teams, and radon is generally higher in natural marble and granite, while natural marble and granite are more expensive. Therefore, most of these samples investigated by investigators are relatively rich families, lacking other types of samples.
+2.In addition, families who use more natural marble and granite may have more money, and rich families may pay more attention to privacy, and may not answer questions or tell the truth.
+
+**b.	Calculate the sampling weight for each observation, using the values for N h and nh. Hint:  First, you need to merge the two data sets, and drop the observations from the population data file that do not correspond with observations in the sample.  Drop counties with no observations.  Multiply population by 100 to adjust population estimates correctly.  Obtain the weight = (population/sample) **
+
+By comparing the two data sets, I find that there are no 26th county and 63rd County in radon dataset. After removing these two counties, I multiply the total population by 100 to correctly adjust the overall estimate to get the population / sample.
+
+```{r}
+# read data
+radon <- read.csv("C:/Users/Zada/Desktop/Sampling technique/day3/radon.csv",header = TRUE,sep = ",")
+radon.county.populations <- read.csv("C:/Users/Zada/Desktop/Sampling technique/day3/radon.county.populations.csv",header = TRUE,sep = ",")
+# Remove the 26th and 63rd counties
+radon.county.populations <- radon.county.populations[-grep(63,radon.county.populations$county),]
+radon.county.populations <- radon.county.populations[-grep(26,radon.county.populations$county),]
+# Merge two datasets
+mydata<-merge(radon,radon.county.populations,by = 'county') 
+# Read the values of Nh and nh
+Nh <- radon.county.populations$population
+# Replace Nh with Nh * 100
+Nh<-Nh*100
+nh <- radon.county.populations$sample
+# Calculated weight (population / sample)
+w=Nh/nh
+```
+
+**c. Treating the sample as a stratified random sample, estimate the average radon level for Minnesota homes, along with a 95% CI.  Interpret the results. Do the same for the response log(radon).  Note:  log() is a natural logarithm. Hint:  Drop if sample=1, so that estimated variance could be obtained. **
+
+Note: run C. before all the previous procedures are run.
+
+```{r}
+# Examine Data
+summary(radon$radon)
+hist(radon$radon, breaks=50) 
+# estimate the average radon level for Minnesota homes, along with a 95% CI. 
+# Drop if sample=1
+mydata<- subset(mydata,mydata$sample!="1")
+# population*100
+mydata$population<-100*mydata$population
+# Calculate weight
+strata_weight<-(mydata$population)/(mydata$sample)
+# Layered design
+samp_des <- svydesign(ids=~1, strata=~county, 
+                      weights=~strata_weight, 
+                      fpc =~population, 
+                      data = mydata)
+# Estimated mean
+svymean.est <- svymean(~radon, samp_des, data=mydata) 
+svymean.est
+# Calculate the confidence interval
+confint(svymean.est) 
+# Convert data to logarithm
+mydata$radon<-log(mydata$radon)
+# Examine Data
+summary(mydata$radon)
+hist(mydata$radon, breaks=50) 
+# estimate the average radon level for Minnesota homes, along with a 95% CI. 
+# Drop if sample=1
+mydata<- subset(mydata,mydata$sample!="1")
+# population*100
+mydata$population<-100*mydata$population
+# Calculate weight
+strata_weight<-(mydata$population)/(mydata$sample)
+# Layered design
+samp_des <- svydesign(ids=~1, strata=~county, 
+                      weights=~strata_weight, 
+                      fpc =~population, 
+                      data = mydata)
+# Estimated mean
+svymean.est <- svymean(~radon, samp_des, data=mydata) 
+svymean.est
+# Calculate the confidence interval
+confint(svymean.est) 
+expmean<-exp(svymean.est)
+CI_left<-exp(1.23962)
+CI_right<-exp(1.353059)
+expmean
+CI_left
+CI_right
+```
+
+analysis:We can see that the mean value of radon level is 4.8723 and the standard error id 0.1552. the condifence interval is (4.568129,5.176476),After logarithmic transformation,We can see that the mean value of radon level is 3.6559 and the standard error id 0.0289. the condifence interval is (3.454301,3.869243).
+we can see that if we use log(radon) then the estimated mean of radon is lower and the confidence is lower.And We can see that the distribution is more consistent with the normal distribution from histogram.
+
+**d.	Estimate the total number of Minnesota homes that radon level of 4 picocuries per liter (pCi/L) or higher, with a 95% CI.  Interpret the results.  The U.S. Environmental Protection Agency (2007) recommends fixing your home if the radon level is at least 4 pCi/L. **
+
+Explain: run the package before running d.
+
+```{r}
+# read data
+radon <- read.csv("C:/Users/Zada/Desktop/Sampling technique/day3/radon.csv",header = TRUE,sep = ",")
+radon.county.populations <- read.csv("C:/Users/Zada/Desktop/Sampling technique/day3/radon.county.populations.csv",header = TRUE,sep = ",")
+# Remove the 26th and 63rd counties
+radon.county.populations <- radon.county.populations[-grep(63,radon.county.populations$county),]
+radon.county.populations <- radon.county.populations[-grep(26,radon.county.populations$county),]
+# Merge two datasets
+data<-merge(radon,radon.county.populations,by = 'county')
+# Drop if sample=1
+data<- subset(data,data$sample!="1")
+# Create Strata 
+data= 
+  data%>% 
+  mutate( 
+  ### Separate strata 
+  data_strata = case_when( 
+    radon < 4 ~ "strata1",
+    TRUE ~ "strata2" 
+    ) %>% 
+    ### Specify factor levels
+factor(levels=c("strata1", "strata2"))
+)
+data %>% select(data_strata) %>% table()
+# population*100
+data$population<-100*data$population
+# Calculate weight
+strata_weight<-(data$population)/(data$sample)
+# Layered design
+samp_des <- svydesign(ids=~1, strata=~data_strata, 
+                      weights=~strata_weight, 
+                      fpc =~population, 
+                      data = data)
+# Estimated total
+svytot.est <- svytotal(~radon, samp_des, data=~data)
+svytot.est
+# Calculate the confidence interval
+confint(svytot.est)
+# Estimated total of Minnesota homes that radon level of 4 picocuries per liter (pCi/L) or higher
+strata2_svytot.est<-((450/(450+550))*svytot.est)
+strata2_svytot.est
+```
+
+Analysis:
+I split radon data into two layers.
+strata1: the radon level is less than 4 picocuries per liter (pCi/L).
+strata2: the radon level is 4 picocuries per liter (pCi/L) or higher.
+We can see the estimated total number of Minnesota homes are 7204186, the estimated standard error is 244603, the estimated confidence interval is (6724774,7683598); and the estimated total number of Minnesota homes that radon level of 4 picocuries per liter (pCi/L) or higher are 3241884.

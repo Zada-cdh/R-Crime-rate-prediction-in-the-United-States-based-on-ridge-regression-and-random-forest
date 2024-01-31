@@ -1,0 +1,373 @@
+---
+title: "Quiz 7"
+author: "Daihuan Cai"
+date: "2020/7/30"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+library(readr)
+library(mosaic)
+library(survey)
+library(sampling)
+library(ICC)
+library(ggplot2)
+```
+
+
+## 1
+
+**1.	For the SRS from the Census of Agriculture data in the file agsrs.csv (provided)**
+
+**1.a.	Find the ANOVA table of acres92, using state as the cluster variable.  Estimate R^2_a from the sample.  Is there clustering effect?**
+
+```{r}
+# read data
+agsrs<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day5/agsrs.csv")
+# Linear fitting, calculating goodness of fit
+model <- lm(ACRES92~factor(STATE), data = agsrs)
+summary(model)
+# Nonlinear fitting and ANOVA table
+anova.model <- glm(ACRES92~factor(STATE), data = agsrs)
+aov1 <-aov(anova.model)
+summary(aov1)
+# Calculating ICC
+icc.sample <- ICCest(STATE, ACRES92, data = agsrs, CI.type =("THD"))
+data.frame(icc.sample$ICC, icc.sample$LowerCI, icc.sample$UpperCI)
+```
+
+We can see that the goodness of fit is 0.5645, and ANOVA table as above. Next, we will judge whether there is clustering effect through calculation.
+
+```{r}
+# Data preparation
+ICC<-0.5032563	
+SSW<-1.546*10^13
+SSB<-2.004*10^13
+SSTO<-SSW+SSB
+N<-42
+# Calculate M
+M<-(258/N)+1
+M<-ceiling(M)
+M
+# Calculate V(tcluster_hat)/ V(tSRS_hat)
+bilv<-((N*M-1)/(M*(N-1)))*(1+ICC*(M-1))
+# judge whether there is clustering effect
+m.bar<-300/N
+m.bar>bilv
+```
+
+As can be seen from the above logical result: TRUE, we can infer that clustering is effect.
+
+**1.b.	Suppose that c1=15c2, where c1 is the cost to sample a state, and c2 is the cost to sample a county within a state.  Assume that the cost for sampling a state is $1,500 (Note:  We don’t need cost info for sampling a county to answer the following question.)  We also assume that the budget (i.e., C) is allowed up to $40,000.  What should the average cluster size (i.e., m.bar) be, if it is desired to sample a total of 300 counties?  How many states would be sampled, that is, what is n? **
+
+```{r}
+# Data preparation
+C1<-1500	
+C2<-100
+MTotal<-300
+# Count the number of states that can be sampled
+n<-(40000-C2*MTotal)/(C1)
+n<-floor(n)
+n
+# the average cluster size 
+m.bar<-MTotal/n
+m.bar
+```
+
+From the above calculation results, we can know that the average cluster (m.bar) is 50 and the number of states we should sample is 6.
+
+## 2
+
+**2.	Gnap (1995) conducted a survey to estimate the teacher workload in Maricopa County, Arizona, public school districts.  Her target population was all first through sixth grade full-time public school teachers with at least one year of experience.  In 1994, Maricopa County has 46 school districts with 311 elementary schools and 15,086 teachers.  Gnap stratified the schools by size of school district; the larger stratum, consisting of schools in districts with more than 5000 students, is considered in this exercise.  The stratum contained 245 schools; 23 participated in the survey.  All teachers in the selected schools were asked to fill out the questionnaires.  Due to on response, however, some questionnaires were not returned.    The data are in file teachers.csv, with psu information in teachmi.csv.  Both files are posted on the Sakai course site.  Note:  There are some records with missing values (coded as -9)?  For the scope of this quiz, delete those records.  Please be mindful when deleting the records.  It’s suggested to delete records (with missing values for the variables we are considering only.) **
+
+**2.a.	Why would a cluster sample be a better design than an SRS for this study?  Consider issues such as cost, ease of collecting data, and confidentiality of respondent.  What are some disadvantages of using a cluster sample? **
+
+Cost: If we use SRS to sample, we will take a sample of 15086 teachers from 311 schools in 46 school districts, and we will send questionnaires to each teacher in the sample. However, if we use this method, the teachers in our sample may come from different schools, which may increase the cost of transportation and contact with teachers. However, if the cluster sampling method is adopted, only schools are selected, and then the questionnaire is sent to each selected teacher in the school, the cost of the survey will be greatly reduced.
+
+Ease of collecting data: If we use SRS to sample, we need to conduct a questionnaire survey on every selected teacher. Maybe every school in our sample has selected teachers. When conducting a questionnaire survey, it means that we need to conduct a survey on all schools and find the corresponding teachers according to the list. This is a very time-consuming and laborious process, which is not easy to implement.
+
+Confidentiality of respondent: If we use SRS to take samples, we need to give each teacher we take a questionnaire and review it. In this case, a school may only select a few teachers, and the selected teachers may not fill in the questionnaire, that is to say, they will not answer us. However, if the cluster sampling method is adopted, all the teachers in the selected schools will fill in the questionnaire. Finally, we can delete the invalid questionnaire and still have the questionnaire to analyze. In addition, human beings have the psychology of conformity, and the response rate of teachers will be improved because the teachers around them fill in the questionnaire. What's more, in the case of a large number of teachers filling in at the same time, the confidentiality of the results filled in by each person will be improved accordingly.
+
+Disadvantages: Although cluster sampling can improve efficiency, reduce cost and improve confidentiality, cluster sampling has a fatal disadvantage: the accuracy of the estimated value calculated is not as good as that of SRS. In other words, the standard deviation and confidence interval obtained by cluster sampling are larger.
+
+**2.b.	Calculate the mean and standard deviation of hrwork in each school in the “large” stratum.  Construct a graph of the means for each school and a separate graph of the standard deviations.  Does there seem to be more variation within a school, or does more of variability occur between different schools?**
+
+```{r}
+# read teachers
+teachers<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day7/teachers.csv")
+# Delete missing values
+# The sample with dist = large is obtained
+large<-teachers %>% filter(DIST == "large" & HRWORK != -9)
+# Calculate the average for each school
+large<-large%>% group_by(SCHOOL) %>% mutate(m=mean(HRWORK),s=sd(HRWORK))
+```
+
+In the large stratum, We can see that:
+
+School 11’s estimated mean of hrwork is 33.99000, and the standard deviation is 1.9530318.
+
+School 12’s estimated mean of hrwork is 36.12308, and the standard deviation is 4.9424865.
+
+School 13’s estimated mean of hrwork is 34.58333, and the standard deviation is 0.7216878.
+
+School 15’s estimated mean of hrwork is 36.75625, and the standard deviation is 0.7460494.
+
+School 16’s estimated mean of hrwork is 36.83958, and the standard deviation is 1.0794503.
+
+School 18’s estimated mean of hrwork is 35.00000, and the standard deviation is 0.
+
+School 19’s estimated mean of hrwork is 34.86667, and the standard deviation is 0.2309401.
+
+School 20’s estimated mean of hrwork is 36.35625, and the standard deviation is 2.4894689.
+
+School 21’s estimated mean of hrwork is 35.41000, and the standard deviation is 3.154045.
+
+School 22’s estimated mean of hrwork is 35.67692, and the standard deviation is 4.9834984.
+
+School 23’s estimated mean of hrwork is 35.17500, and the standard deviation is 3.3920495.
+
+School 24’s estimated mean of hrwork is 31.94444, and the standard deviation is 0.8600307.
+
+School 25’s estimated mean of hrwork is 31.25000, and the standard deviation is 0.6681531.
+
+School 28’s estimated mean of hrwork is 31.46471, and the standard deviation is 2.6273659.
+
+School 29’s estimated mean of hrwork is 29.10625, and the standard deviation is 2.4403509.
+
+School 30’s estimated mean of hrwork is 35.79091, and the standard deviation is 1.7448998.
+
+School 31’s estimated mean of hrwork is 34.52500, and the standard deviation is 1.3268993.
+
+School 32’s estimated mean of hrwork is 35.45625, and the standard deviation is 1.7122962.
+
+School 33’s estimated mean of hrwork is 26.82000, and the standard deviation is 0.3801316.
+
+School 34’s estimated mean of hrwork is 27.42143, and the standard deviation is 0.9137182.
+
+School 36’s estimated mean of hrwork is	36.97500, and the standard deviation is 2.9612779.
+
+School 38’s estimated mean of hrwork is 37.66000, and the standard deviation is 1.1095044.
+
+School 41’s estimated mean of hrwork is 36.87500, and the standard deviation is 0.3181981.
+
+```{r}
+# Construct a graph of the means for each school and a separate graph of the standard deviations.  
+# Draw side-by-side boxplots of HRWORK for the schools
+large %>% ggplot(aes(x=SCHOOL,y=HRWORK,color=SCHOOL,group=SCHOOL))+geom_boxplot() + labs(title= "Boxplots by SCHOOL - the mean of HRWORK")
+# Draw hist of the mean of HRWORK for the schools
+ggplot(data = large, aes(x =m)) + geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) + geom_density(kernel = "gaussian", size = 1, aes(m)) + labs(title = "Density of tne mean of HRWORK for the schools")
+# Draw hist of the standard deviations of HRWORK for the schools
+ggplot(data = large, aes(x =s)) + geom_histogram(bins = 40, color = "black", fill = "coral", aes(y=..density..)) + geom_density(kernel = "gaussian", size = 1, aes(s)) + labs(title = "Density of the standard deviations of HRWORK for the schools")
+```
+
+Analysis: From the box plot and the mean square density chart, we can see that the average working time of most schools is about 35 hours. This shows that the working hours of different schools are not very different. However, if we can see from the square density chart of variance, the working hours within the school are quite different. So there seems to be more change within the school.
+
+**2.c.	Construct a scatterplot of the standard deviations versus the means for the schools, for the variable hrwork.  Is there more or less variability in schools with higher workload?**
+
+```{r}
+# Draw scatter plot of mean and variance
+ggplot(data = large, aes(x = m, y = s)) + geom_point(color = "darkred", size = 2) +
+labs(title= "variance vs mean")
+```
+
+We can see that when the school workload is large, the variance span is very wide, so there will be more variability.
+
+**2.d.	Estimate the average of hrwork in the large stratum in Maricopa County, along with its standard error.  Use popteach in teachmi.csv for the M i ’s.**
+
+```{r}
+# read teachmi
+teachmi<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day7/teachmi.csv")
+# The sample with dist = large is obtained
+large_mi<-teachmi %>% filter(DIST == "large")
+# Connecting two datasets
+large<-merge(large, large_mi, all=TRUE)
+# Calculate n
+n<-nrow(large_mi)
+n
+# Calculate Total cluster
+N<-245
+# Calculate pw1
+large<- large %>% mutate(N=N, n=n) %>% mutate(pw1=N/n)%>% ungroup()
+# Calculate pw2
+large<- large %>%mutate(pw2=POPTEACH/SSTEACH)%>% ungroup()
+
+# survey analysis
+# 2 - level Cluster Sampling design
+# Explanation: I added a column named teacher in the dataset to number all rows
+clust2.large.des <- svydesign(id = ~ SCHOOL+teacher, weights = ~pw1 + pw2,fpc = ~N + POPTEACH,data = large)
+summary(clust2.large.des)
+# Estimate the average and standard error of hrwork
+clust2.mean.HRWORK.est <- svymean(~HRWORK, clust2.large.des)
+clust2.mean.HRWORK.est
+# Calculate the confidence interval
+confint(clust2.mean.HRWORK.est)
+```
+
+We can see that by using two-state cluster sampling, we can calculate the estimated mean hrwork in the large stratum in Maricopa County which is 33.821 and the standard error of estimated mean hrwork is 0.7097, and the confidence interval is (32.42967, 35.21153).
+
+## 3
+
+**3.	The file measles.csv contains data consistent with that obtained in a survey of parents whose children had not been immunized for measles during a recent campaign to immunize all children between the ages of 11 and 15. During the campaign, 7633 children from the 46 schools in the area were immunized; 9962 children whose records showed no previous immunization were not immunized. In a follow-up survey to explore why the children had not been immunized during the campaign, Roberts et al. (1995) sent questionnaires to the parents of a cluster sample of the 9962 children. Ten schools were randomly selected, then a sample of the M i nonimmunized children from each school was selected and the parents of those children were sent a questionnaire. Not all parents responded to the questionnaire.**
+
+**3.a.	Estimate, separately for each school, the percentage of parents who returned a consent form (variable returnf ). For this exercise, treat the “no answer” responses (value 9) as not returned. **
+
+```{r}
+# read measles
+measles<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day7/measles.csv")
+# View the number of questionnaires issued
+table(measles$SCHOOL)
+# Extract all valid questionnaires
+measles1<-measles%>%group_by(SCHOOL)%>%filter(RETURNF == 1)
+# View the number of returned questionnaires
+table(measles1$SCHOOL)
+# Estimate, separately for each school, the percentage of parents who returned a consent form 
+school1<-table(measles1$SCHOOL)[1]/table(measles$SCHOOL)[1]
+school2<-table(measles1$SCHOOL)[2]/table(measles$SCHOOL)[2]
+school3<-table(measles1$SCHOOL)[3]/table(measles$SCHOOL)[3]
+school4<-table(measles1$SCHOOL)[4]/table(measles$SCHOOL)[4]
+school5<-table(measles1$SCHOOL)[5]/table(measles$SCHOOL)[5]
+school6<-table(measles1$SCHOOL)[6]/table(measles$SCHOOL)[6]
+school7<-table(measles1$SCHOOL)[7]/table(measles$SCHOOL)[7]
+school8<-table(measles1$SCHOOL)[8]/table(measles$SCHOOL)[8]
+school9<-table(measles1$SCHOOL)[9]/table(measles$SCHOOL)[9]
+school10<-table(measles1$SCHOOL)[10]/table(measles$SCHOOL)[10]
+bilv<-c(school1,school2,school3,school4,school5,school6,school7,school8,school9,school10)
+bilv
+```
+
+We can see that:
+
+In school 1: we send 40 questionnaire,and receive 19 consent form, the percentage is 0.4750000.
+
+In school 2: we send 38 questionnaire,and receive 19 consent form, the percentage is 0.5000000.
+
+In school 3: we send 19 questionnaire,and receive 13 consent form, the percentage is 0.6842105.
+
+In school 4: we send 30 questionnaire,and receive 18 consent form, the percentage is 0.6000000.
+
+In school 5: we send 30 questionnaire,and receive 12 consent form, the percentage is 0.4000000.
+
+In school 6: we send 25 questionnaire,and receive 13 consent form, the percentage is 0.5200000.
+
+In school 7: we send 23 questionnaire,and receive 15 consent form, the percentage is 0.6521739.
+
+In school 8: we send 43 questionnaire,and receive 21 consent form, the percentage is 0.4883721.
+
+In school 9: we send 38 questionnaire,and receive 23 consent form, the percentage is 0.6052632.
+
+In school 10: we send 21 questionnaire,and receive 7 consent form, the percentage is 0.3333333. 
+
+**3.b.	Using the number of respondents in school i as m i , construct the sampling weight for each observation.**
+
+```{r}
+# Data preparation
+N<-46
+n<-10
+# Calculate sw1
+measles<- measles %>% mutate(N=N, n=n) %>% mutate(sw1=N/n)%>% ungroup()
+# Calculate sw2
+measles$sw2[measles$SCHOOL==1]<-1/bilv[1]
+measles$sw2[measles$SCHOOL==2]<-1/bilv[2]
+measles$sw2[measles$SCHOOL==3]<-1/bilv[3]
+measles$sw2[measles$SCHOOL==4]<-1/bilv[4]
+measles$sw2[measles$SCHOOL==5]<-1/bilv[5]
+measles$sw2[measles$SCHOOL==6]<-1/bilv[6]
+measles$sw2[measles$SCHOOL==7]<-1/bilv[7]
+measles$sw2[measles$SCHOOL==8]<-1/bilv[8]
+measles$sw2[measles$SCHOOL==9]<-1/bilv[9]
+measles$sw2[measles$SCHOOL==10]<-1/bilv[10]
+# Calculating sw
+measles$sw<-measles$sw1*measles$sw2
+table(measles$sw)
+```
+
+We can see that:
+
+In school 1: the  weight is 6.72307692307692.
+
+In school 2: the  weight is 7.05333333333333.
+
+In school 3: the  weight is 7.6.
+
+In school 4: the  weight is 7.66666666666667.
+
+In school 5: the  weight is 8.84615384615384.
+
+In school 6: the  weight is 9.2.
+
+In school 7: the  weight is 9.41904761904762.
+
+In school 8: the  weight is 9.68421052631579.
+
+In school 9: the  weight is 11.5.
+
+In school 10: the  weight is 13.8. 
+
+**3.c.	Estimate the overall percentage of parents who received a consent form along with a 95% CI.**
+
+```{r}
+# Calculate Ni
+measles$Ni[measles$SCHOOL==1]<-table(measles$SCHOOL)[1]
+measles$Ni[measles$SCHOOL==2]<-table(measles$SCHOOL)[2]
+measles$Ni[measles$SCHOOL==3]<-table(measles$SCHOOL)[3]
+measles$Ni[measles$SCHOOL==4]<-table(measles$SCHOOL)[4]
+measles$Ni[measles$SCHOOL==5]<-table(measles$SCHOOL)[5]
+measles$Ni[measles$SCHOOL==6]<-table(measles$SCHOOL)[6]
+measles$Ni[measles$SCHOOL==7]<-table(measles$SCHOOL)[7]
+measles$Ni[measles$SCHOOL==8]<-table(measles$SCHOOL)[8]
+measles$Ni[measles$SCHOOL==9]<-table(measles$SCHOOL)[9]
+measles$Ni[measles$SCHOOL==10]<-table(measles$SCHOOL)[10]
+# Calculate bilv
+measles$bilv[measles$SCHOOL==1]<-bilv[1]
+measles$bilv[measles$SCHOOL==2]<-bilv[2]
+measles$bilv[measles$SCHOOL==3]<-bilv[3]
+measles$bilv[measles$SCHOOL==4]<-bilv[4]
+measles$bilv[measles$SCHOOL==5]<-bilv[5]
+measles$bilv[measles$SCHOOL==6]<-bilv[6]
+measles$bilv[measles$SCHOOL==7]<-bilv[7]
+measles$bilv[measles$SCHOOL==8]<-bilv[8]
+measles$bilv[measles$SCHOOL==9]<-bilv[9]
+measles$bilv[measles$SCHOOL==10]<-bilv[10]
+# survey analysis
+# 2 - level Cluster Sampling design
+# Explanation: I added a column named parent in the dataset to number all rows
+clust2.measles.des <- svydesign(id = ~ SCHOOL+parent, weights = ~sw1 + sw2,fpc = ~N + Ni,data = measles)
+summary(clust2.measles.des)
+# Estimate the average and standard error of bilv
+clust2.mean.bilv.est <- svymean(~bilv, clust2.measles.des)
+clust2.mean.bilv.est
+# Calculate the confidence interval
+confint(clust2.mean.bilv.est)
+```
+
+By using 2 - level Cluster Sampling, we can see that the estimated over all percentage of parents who received a consent form is 0.50315 and the standard error is 0.0265, and the confidence interval is (0.4512881, 0.5550159).
+
+**3.d.	How do your estimate and interval in part (c) compare with the results you would have obtained if you had ignored the clustering and analyzed the data as an SRS? Find the ratio.  Interpret your result.  estimated variance from (c)/ estimated variance if the data were analyzed as an SRS**
+
+```{r}
+#  use SRS
+N<-9962
+n<-307
+# SRS design
+des = svydesign(ids = ~1, fpc = rep(N, n), data = measles) 
+# Estimate the average and standard error of bilv
+svymean.est <- svymean(~bilv,des, data=~measles)
+svymean.est
+# Calculate the confidence interval
+confint(svymean.est)
+# 2 - level Cluster Sampling/SRS
+lv<-0.0265^2/0.0053^2
+lv
+```
+
+By using SRS, we can see that the estimated over all percentage of parents who received a consent form is 0.52117 and the standard error is 0.0053, and the confidence interval is (0.5108572, 0.5314881).
+
+We can see that the SE of SRS is much smaller than that of cluster sampling. So it is more accurate to use SRS.
+
+And from lv=25, (The results above) we can know how much precision do we lose by taking a cluster sample, compared with SRS, this means that when using SRS to get a sample, you need to use cluster sampling to get 25 samples.

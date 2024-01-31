@@ -1,0 +1,364 @@
+---
+title: "Quiz 5"
+author: "Daihuan Cai"
+date: "2020/7/26"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+# Load Libraries
+library(rmarkdown)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(ggbeeswarm)
+library(survey)
+```
+
+## 1
+
+**1.	Using the data set agsrs.csv, estimate the total number of acres devoted to farming for each of two domains: (a) counties with fewer than 600 farms, and (b) counties with 600 or more farms.  Give standard errors for your estimates. **
+
+Note: the premise of using domain and subdomain technology is that we know the total N, but we don't know the subpopulation size N1, N2. So let's assume we don't know the subpopulation size N1, N2.
+
+```{r}
+# Set working directory
+setwd("C:/Users/Zada/Desktop/Sampling technique/day5")
+# read data
+agsrs = read.csv("agsrs.csv")
+agpop = read.csv("agpop.csv")
+# View all variable names
+names(agsrs)
+# d here is the same as x in lecture note for domain
+# d is an indicator variable
+# Grouping data
+agsrs$d <- ifelse(agsrs$FARMS92 <600,1,0)
+agsrs$u = agsrs$ACRES92* agsrs$d
+# View datasets
+head(agsrs)
+tail(agsrs)
+# Calculate fpc
+agsrs$fpc<-nrow(agpop)
+# SRS design
+agsrs.srs <- svydesign(id = ~1, data = agsrs, fpc = ~fpc)
+# Estimated total acreage for farming in counties with fewer than 600 farms
+agsrstotal = svyby(~ACRES92, by = ~d, design = agsrs.srs, FUN = svytotal)
+agsrstotal
+```
+
+We can see that by using the stratification sampaling-domains, the estimate of the total number of acres of domain a (counties with fewer than 600 farms) is 497939808 and the standard error of estimated acres is 55919525; the estimate of the total number of acres of domain b (counties with 600 or more farms) is 418987302 and the standard error of estimated acres is 38938277.
+
+## 2
+
+**2.	The data set trees.csv (posted on sakai course site), from Hand et al. (1994), contains measurements of diameter (inches), height (feet), and timber volume (cubic feet) for a sample of 31 black cherry trees.  Diameter and height of trees are easily measured, but volume is more difficult to measure.  **
+
+```{r}
+# read data
+trees<-read.csv("C:/Users/Zada/Desktop/Sampling technique/day5/trees.csv")
+# Calculation dimeter
+trees$dimeter<-trees$Girth/pi
+# to see if TOTMEDEX is correlated with PHARMEXP
+ggplot(data = trees, aes(x = dimeter, y = Volume)) + geom_point(color = "darkred", size = 2) +
+labs(title= "Volume vs dimeter")
+```
+
+We can see from the scatter diagram that the two variables are related. Obviously, they are linear and positively correlated. Maybe y=B0x+B (B0 is greater than 0 and B is less than 0) can describe the relationship between volume and dimeter.
+
+**b.	Suppose that these trees are an SRS from a forest of N=2967 trees and that the sum of the diameters for all trees in the forest is t x = 41,835 inches.  Estimate the total volume for all trees in the forest and construct 95% CI, using three approaches we have learned so far:  **
+**Note:  “girth” in the data set is the same as diameter measurements. **
+
+**(i)	Design-based approach only.**
+
+By using SRS:
+
+```{r}
+# Total population size
+N = 2967
+# Sample size
+n = nrow(trees) 
+# SRS Design
+des = svydesign(ids = ~1, fpc = rep(N, n), data = trees) 
+# Estimate total
+svytot.est <- svytotal(~Volume,des, data=~trees)
+svytot.est
+# CI for total Volume
+confint(svytotal(~Volume, des))
+```
+
+We can see that by using SRS, the estimated total of volume is 89517 and the estimated standard error is 8713.7 and the estimated confidence interval is (72438.79, 106595.7).
+
+**(ii)	ratio approximation **
+
+According to a. there is a certain correlation between volume and dimeter, it can be seen that there may be a certain correlation between volume and girth, so I use volume and girth to  do ratio estimation and verify the correlation between them.
+
+By using ratio estimation
+
+```{r}
+# to see if volume is correlated with girth
+ggplot(data = trees, aes(x = Girth, y = Volume)) + geom_point(color = "darkred", size = 2) +
+labs(title= "Volume vs Girth")
+```
+
+We can see from the scatter diagram that the two variables are related. Obviously, they are linear and positively correlated. Maybe y=B0x+B (B0 is greater than 0 and B is less than 0) can describe the relationship between volume and Girth.
+
+```{r}
+# ratio approximation
+# Add population to original dataset
+trees <- trees %>% mutate(N = 2967)
+# specify N as fpc, SRS design
+srs.trees <- svydesign(id = ~1, data = trees, fpc = ~N)
+summary(srs.trees)
+# ratio estimate
+trees.ratio <- svyratio( ~Volume, ~Girth, srs.trees)
+names(trees.ratio)
+# get 95% CI for ratio estimate
+confint(trees.ratio) 
+# tx
+tx<-41835
+# get est. for total Volume
+t.y.hat = trees.ratio$ratio*tx
+t.y.hat 
+# Calculate the estimate of SE of Volume
+ratio.SE <-sqrt(trees.ratio$var)
+t.y.SE = ratio.SE*tx 
+t.y.SE 
+# get 95% CI for total Volume using built-in function
+confint(trees.ratio)*tx
+```
+
+We can see that by using ratio estimation, the estimated total of volume is 95272.16 and the estimated standard error is 5471.434 and the estimated confidence interval is (84548.34, 105996).
+
+**(iii)	regression approximation**
+
+```{r}
+# regression estimation
+pop = data.frame(Girth=tx)
+reg.Volume <- svyglm(Volume ~ Girth, design = srs.trees)
+# Calculate the estimated value of volume
+trees.lm<-predict(reg.Volume, newdata=pop, total=N)
+trees.lm
+# 95% CI
+confint(trees.lm)
+```
+
+We can see that by using regression approximation, the estimated total of volume is 102319 and the estimated standard error is 2630 and the estimated confidence interval is (97164.11, 107473.6).
+
+**c.	Comment on the results of these three approaches.**
+
+By using SRS, we can see that the estimated total of volume is 89517 and the estimated standard error is 8713.7 and the estimated confidence interval is (72438.79, 106595.7).
+
+By using ratio estimation, we can see that the estimated total of volume is 95272.16 and the estimated standard error is 5471.434 and the estimated confidence interval is (84548.34, 105996).
+
+By using regression estimation, we can see that the estimated total of volume is 102319 and the estimated standard error is 2630 and the estimated confidence interval is (97164.11, 107473.6).
+
+We can see that the SE estimated by regression estimation is the smallest; and as can be seen from the graph of volume and girth, the scatter plot does not cross the origin. So when using regression estimation, the result is the most accurate.
+
+But when we use tx, the total volume estimated by SRS, ratio estimation and regression estimation is different, so I will use tx_hat as the sum of the diameters for all trees in the forest, then use these methods again to estimate SE, and finally compare them.
+
+Estimate tx
+
+```{r}
+# Estimate total
+svytot.est <- svytotal(~Girth,des, data=~trees)
+svytot.est
+tx_hat<-svytot.est[1]
+# CI for total Girth
+confint(svytotal(~Girth, des))
+```
+
+We can see that by using SRS, the estimated total of tx is 39308 and the estimated standard error is 1663.5 and the estimated confidence interval is (36047.52, 42568.4).
+
+```{r}
+# SRS
+svytot.est <- svytotal(~Volume,des, data=~trees)
+svytot.est
+# ratio approximation
+# get est. for total Volume
+t.y.hat = trees.ratio$ratio*tx_hat
+t.y.hat 
+# Calculate the estimate of SE of Volume
+ratio.SE <-sqrt(trees.ratio$var)
+t.y.SE = ratio.SE*tx_hat 
+t.y.SE 
+# regression estimation
+pop = data.frame(Girth=tx_hat)
+reg.Volume <- svyglm(Volume ~ Girth, design = srs.trees)
+trees.lm<-predict(reg.Volume, newdata=pop, total=N)
+trees.lm
+```
+
+We can see that all methods estimate the same value of total Volume(89517).
+
+By using SRS, we can see that the estimated standard error is 8713.7; by using ratio estimation, we can see that the estimated standard error is 5140.933; By using regression estimation, we can see that the estimated standard error is 2216.1. 
+
+We can see that the SE estimated by regression estimation is the smallest. So when using regression estimation, the result is the most accurate.
+
+## 3
+
+**3.	The Integrated Public Use Microdata Series (IPUMS) is available online at https://usa.ipums.org/usa/ (Ruggles et al., 2004).   Again use the 1980 Decennial Census sample as our population data.  Draw a SRS (n=718), same as the one you have drawn for your previous hw.  However, along with total income variable (inctot), you also need to extract data for age, sex, race, or marstat variables.** 
+
+**a.	Estimate total income (inctot) using ratio estimation with age as an auxiliary variable.  Is the standard error of this quantity of interest using this approach smaller compared with SRS only ? Why, or why not? Justify your answer.**
+
+```{r}
+# by using SRS
+# Set working directory
+setwd("C:/Users/Zada/Desktop/Sampling technique/day2")
+# read data
+mydata<-read.csv("mydata.csv")
+# Select rows less than 75000
+mydata<- mydata %>% filter(INCTOT != 9999999 & INCTOT <= 75000)
+# Add a column N = population
+mydata <- mydata%>% mutate(N = n())
+# Seed setting
+set.seed(1234)
+# random sampling
+srsmydata <- sample_n(mydata, 718, replace = F)
+srsmydata <- data.frame(srsmydata)
+# SRS design
+srs.des <- svydesign(ids=~1,fpc=~N,data=srsmydata)
+# Calculate the population estimate
+total.est <- svytotal(~INCTOT, design = srs.des)
+total.est
+# Calculate the confidence interval
+confint(total.est)
+```
+
+We can see that by using SRS, the estimated total of INCTOT is 6940165499 and the estimated standard error is 293237013 and the estimated confidence interval is (6365431515, 7514899483).
+
+```{r}
+
+
+# to see if inctot is correlated with age
+ggplot(data = srsmydata, aes(x = AGE, y = INCTOT )) + geom_point(color = "darkred", size = 2) +
+labs(title= "INCTOT vs AGE")
+```
+
+It can be seen from the graph of the relationship between INCOT and AGE that there is almost no obvious relationship between INCOT and AGE, maybe AGE is not suitable for auxiliary variable.
+
+```{r}
+
+# ratio approximation
+# Add population to original dataset
+srsmydata <- srsmydata %>% mutate(N = nrow(mydata))
+# specify N as fpc, SRS design
+srs.srsmydata<- svydesign(id = ~1, data = srsmydata, fpc = ~N)
+summary(srs.srsmydata)
+# ratio estimate
+srsmydata.ratio <- svyratio( ~INCTOT, ~AGE, srs.srsmydata)
+names(srsmydata.ratio)
+# get 95% CI for ratio estimate
+confint(srsmydata.ratio) 
+# tx
+tx<-sum(mydata$AGE)
+# get est. for total Volume
+t.y.hat = srsmydata.ratio$ratio*tx
+t.y.hat 
+# Calculate the estimate of SE of Volume
+ratio.SE <-sqrt(srsmydata.ratio$var)
+t.y.SE = ratio.SE*tx
+t.y.SE 
+# get 95% CI for total Volume using built-in function
+confint(srsmydata.ratio)*tx
+```
+
+We can see that by using ratio approximation, the estimated total of INCTOT is 6823609857 and the estimated standard error is 296876295 and the estimated confidence interval is (6241743012, 7405476703).
+
+We can see that the estimated value of total income (INCTOT) is the same regardless of SRS or ratio estimation method. 
+
+But strangely, by using SRS, the estimated standard error is 293237013; At the same time, by using ratio approximation, the estimated standard error is 296876295. Therefore, the estimated value of SE by using ratio estimation is larger than that of SE by using SRS.
+
+It can be seen from the graph of the relationship between INCTOT and AGE that there is almost no obvious relationship between INCTOT and AGE, which may be the reason that the estimated value of SE is lower when ratio estimation is used. The auxiliary variable can not bring precision and it works in opposit way.
+
+**b.	Using each of the following variables: age, sex, race, or marstat, use regression estimation to calibrate your estimate of total income to the category totals.  That is, you need to run four regression models in which each of the aforementioned variables is treated as an auxiliary variable (e.g., x in the regression model) to help estimate the total income.  Explain your results.**
+
+```{r}
+# regression estimation of INCOT and AGE
+pop = data.frame(AGE=tx)
+reg.INCTOT  <- svyglm(INCTOT ~ AGE, design = srs.srsmydata)
+# Calculate population
+N = nrow(mydata)
+# Calculate the estimated value of INCTOT
+srsmydata.lm<-predict(reg.INCTOT, newdata=pop, total=N)
+srsmydata.lm
+# 95% CI
+confint(srsmydata.lm)
+# regression estimation of INCOT and sex
+# Grouping data
+mydata$d1 <- ifelse(mydata$SEX == 2 ,1,0)
+srsmydata$d1 <- ifelse(srsmydata$SEX == 2 ,1,0)
+# View datasets
+head(srsmydata)
+tail(srsmydata)
+# specify N as fpc, SRS design
+srs.srsmydata<- svydesign(id = ~1, data = srsmydata, fpc = ~N)
+# regression estimation design
+pop = data.frame(d1=sum(mydata$d1,na.rm=T))
+reg.INCTOT  <- svyglm(INCTOT ~ d1, design = srs.srsmydata)
+# Calculate population
+N = nrow(mydata)
+# Calculate the estimated value of INCTOT
+srsmydata.lm<-predict(reg.INCTOT, newdata=pop, total=N)
+srsmydata.lm
+# 95% CI
+confint(srsmydata.lm)
+# regression estimation of INCOT and race
+# Grouping data
+mydata$d2 <- ifelse(mydata$RACE == 1 ,1,0)
+srsmydata$d2 <- ifelse(srsmydata$RACE == 1 ,1,0)
+# View datasets
+head(srsmydata)
+tail(srsmydata)
+# specify N as fpc, SRS design
+srs.srsmydata<- svydesign(id = ~1, data = srsmydata, fpc = ~N)
+# regression estimation design
+pop = data.frame(d2=sum(mydata$d2,na.rm=T))
+reg.INCTOT  <- svyglm(INCTOT ~ d2, design = srs.srsmydata)
+# Calculate population
+N = nrow(mydata)
+# Calculate the estimated value of INCTOT
+srsmydata.lm<-predict(reg.INCTOT, newdata=pop, total=N)
+srsmydata.lm
+# 95% CI
+confint(srsmydata.lm)
+# regression estimation of INCOT and MARST
+N.strat = as.numeric(table(mydata$MARST))
+srsmydata = srsmydata %>%
+mutate(
+# add strata population size to each sampled unit
+N_h = case_when(
+MARST =="1" ~ N.strat[1],
+MARST =="2"~ N.strat[2],
+MARST=="3"~ N.strat[3],
+MARST=="4"~ N.strat[4],
+MARST=="5"~ N.strat[5],
+MARST=="6"~ N.strat[6]
+)
+)
+srs.srsmydata <- svydesign(ids=~1, strata=~MARST, fpc=~N_h, data = srsmydata)
+pop = data.frame(MARST=sum(mydata$MARST))
+reg.INCTOT  <- svyglm(INCTOT ~ MARST, design = srs.srsmydata)
+# Calculate population
+N = nrow(mydata)
+# Calculate the estimated value of INCTOT
+srsmydata.lm<-predict(reg.INCTOT, newdata=pop, total=N)
+srsmydata.lm
+# 95% CI
+confint(srsmydata.lm)
+```
+
+When age was used as the auxiliary variable, the estimated total of INCTOT is 6903121701 and the estimated standard error is 287628646 and the estimated confidence interval is (6339379914, 7466863488).
+
+When sex was used as the auxiliary variable, the estimated total of INCTOT is 7028000000 and the estimated standard error is 278226572 and the estimated confidence interval is (6482676123, 7573304246).
+
+When race was used as the auxiliary variable, the estimated total of INCTOT is 6961425306 and the estimated standard error is 293105131 and the estimated confidence interval is (6386949807, 7535900806).
+
+When MARST was used as the auxiliary variable, the estimated total of INCTOT is 6933000000 and the estimated standard error is 283131434 and the estimated confidence interval is (6378034973, 7487889800).
+
+We can see that the estimated standard error is the smallest when using MARST as the auxiliary variable; the estimated standard error is the largest when using race as the auxiliary variable.
+
+We can also see that when SRS is used and age is used as the auxiliary variable, SE is equal to 293237013; at the same time, when regression estimation is used and age is used as auxiliary variable, SE is equal to 287628646. Obviously, regression estimation is better than SRS.
